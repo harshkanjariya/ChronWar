@@ -17,37 +17,51 @@ class Game extends JFrame{
 }
 class GamePanel extends JPanel implements Runnable,KeyListener{
 	double x,y,vx,vy,a,r,friction;
+	private Point camera;
+	private boolean pressed;
 	private Rectangle []blocks=new Rectangle[5];
 	public GamePanel(){
-		x=100;
-		y=200;
-		vx=5;
+		x=550;
+		y=250;
+		vx=0;
 		vy=-2;
 		a=0.1;
-		r=50;
+		r=30;
+		camera=new Point();
 		friction=0.9;
 		Thread t=new Thread(this);
 		t.start();
-		blocks[0]=new Rectangle(50,500,500,50);
-		blocks[1]=new Rectangle(500,600,500,50);
-		blocks[2]=new Rectangle(1000,50,50,500);
-		blocks[3]=new Rectangle(20,50,50,500);
-		blocks[4]=new Rectangle(50,50,500,50);
+		blocks[0]=new Rectangle(-500,500,500,50);
+		blocks[1]=new Rectangle(0,600,500,50);
+		blocks[2]=new Rectangle(500,400,500,50);
+		blocks[3]=new Rectangle(1000,300,500,50);
+		blocks[4]=new Rectangle(1800,100,500,50);
 	}
 	public void paint(Graphics g){
-		g.setColor(new Color(255,255,255,255));
-		g.fillRect(0,0,getWidth(),getHeight());
-		g.setColor(Color.red);
-		g.fillOval((int)(x-r),(int)(y-r),(int)(2*r),(int)(2*r));
-		g.setColor(Color.green);
+		Graphics2D g2d=(Graphics2D)g;
+		g2d.setColor(new Color(255,255,255,255));
+		g2d.fillRect(0,0,getWidth(),getHeight());
+		g2d.translate(-camera.x,-camera.y);
+		g2d.setColor(Color.red);
+		g2d.fillOval((int)(x-r),(int)(y-r),(int)(2*r),(int)(2*r));
+		g2d.setColor(Color.green);
 		for(Rectangle rc:blocks)
-			g.fillRect(rc.x,rc.y,rc.width,rc.height);
-		g.setColor(Color.blue);
+			g2d.fillRect(rc.x,rc.y,rc.width,rc.height);
+		g2d.setColor(Color.blue);
 	}
 	public void run(){
 		while(true){
-			x+=vx;
+			if(pressed)
+				x+=vx;
 			y+=vy;
+			if(x-camera.x>getWidth()/2 && vx>0)
+				camera.x=(int)(x-getWidth()/2);
+			else if(x-camera.x<getWidth()/4 && vx<0)
+				camera.x=(int)(x-getWidth()/4);
+			if(y-camera.y>getHeight()*3/4 && vy>0)
+				camera.y=(int)(y-getHeight()*3/4);
+			else if(y-camera.y<getHeight()/4 && vy<0)
+				camera.y=(int)(y-getHeight()/4);
 			boolean inter=false;
 			for(Rectangle rc:blocks)
 				inter=inter|intersact(rc);
@@ -60,28 +74,57 @@ class GamePanel extends JPanel implements Runnable,KeyListener{
 	public void keyPressed(KeyEvent e){
 		int c=e.getKeyCode();
 		if(c==KeyEvent.VK_UP){
-			vy=-5;
+			boolean touch=false;
+			for(Rectangle rc:blocks){
+				if(x>rc.x && x<rc.x+rc.width && y+r+2>rc.y){
+					touch=true;
+					break;
+				}
+			}
+			if(touch)
+				vy=-5;
 		}else if(c==KeyEvent.VK_LEFT){
+			pressed=true;
 			vx=-5;
 		}else if(c==KeyEvent.VK_RIGHT){
+			pressed=true;
 			vx=5;
+		}else if(c==KeyEvent.VK_SPACE){
+			boolean touch=false;
+			for(Rectangle rc:blocks){
+				if(x>rc.x && x<rc.x+rc.width && y+r+2>rc.y){
+					touch=true;
+					break;
+				}
+			}
+			if(touch)
+				vy=-7;
 		}
 	}
-	public void keyReleased(KeyEvent e){}
+	public void keyReleased(KeyEvent e){
+		int c=e.getKeyCode();
+		if(c==KeyEvent.VK_LEFT){
+			pressed=false;
+		}else if(c==KeyEvent.VK_RIGHT){
+			pressed=false;
+		}
+	}
 	public void keyTyped(KeyEvent e){}
 	private boolean intersact(Rectangle rc){
 		if(x>rc.x && x<rc.x+rc.width){
 			if(y<rc.y+rc.height/2){
 				if(y+r>rc.y){
-					vy=-Math.abs(vy*friction);
-					vx=vx*friction;
+					y=rc.y-r;
+					vy=0;
+					// vy=-Math.abs(vy*friction);
 					return true;
 				}
 			}
 			else if(y>rc.y+rc.height/2){
 				if(y-r<rc.y+rc.height){
-					vy=Math.abs(vy*friction);
-					vx=vx*friction;
+					y=rc.y+rc.height+r;
+					vy=0;
+					// vy=Math.abs(vy*friction);
 					return true;
 				}
 			}
