@@ -1,4 +1,5 @@
 from datetime import datetime
+import os
 import pytz
 import pygame
 pygame.mixer.pre_init(44100, 16, 2, 4096)
@@ -6,6 +7,7 @@ pygame.init()
 screen=pygame.display.set_mode([1200,600])
 width,height=screen.get_size()
 running=True
+jumping=0
 pressed=False
 flip=False
 colliding=False
@@ -29,6 +31,9 @@ class Player(pygame.sprite.Sprite):
 		self.rect=self.image.get_rect()
 		self.vx=0
 		self.vy=0
+	def show(self):
+		global screen,camera
+		pygame.draw.rect(screen,self.color,(self.rect.x-camera[0],self.rect.y-camera[1],self.rect.width,self.rect.height))
 	def update(self):
 		self.rect.x+=self.vx
 		self.rect.y+=self.vy
@@ -68,22 +73,22 @@ class Wall(pygame.sprite.Sprite):
 			screen.blit(brickimg,(self.rect.x+i*bricksize-camera[0],self.rect.y-5-camera[1],bricksize,bricksize+5))
 		# pygame.draw.rect(screen,self.color,[self.rect.x-camera[0],self.rect.y-camera[1],self.rect.width,self.rect.height])
 
-player=Player("main",(0,0,0),70,100)
+player=Player("main",(255,0,0),60,100)
 player.rect.x=20
 player.rect.y=20
 all_blocks.add(player)
-idle=pygame.image.load('character/sprite0.png')
-idle=pygame.transform.scale(idle,(player.rect.width,player.rect.height))
+idle=pygame.image.load('character'+os.path.sep+'idle.png')
+# idle=pygame.transform.scale(idle,(player.rect.width,player.rect.height))
 boy=[]
 imgcount=0
 for i in range(10):
-	im=pygame.image.load('character/sprite'+str(i+1)+'.png')
-	im=pygame.transform.scale(im,(player.rect.width,player.rect.height))
+	im=pygame.image.load('character'+os.path.sep+'run'+str(i+1)+'.png')
+	# im=pygame.transform.scale(im,(player.rect.width,player.rect.height))
 	boy.append(im)
 jump=[]
 for i in range(7):
-	im=pygame.image.load('character/jump'+str(i+1)+'.png')
-	im=pygame.transform.scale(im,(player.rect.width,player.rect.height))
+	im=pygame.image.load('character'+os.path.sep+'jump'+str(i+1)+'.png')
+	# im=pygame.transform.scale(im,(player.rect.width,player.rect.height))
 	jump.append(im)
 coins=[]
 coin=Other("coin 1",(0,0,0),1035,350,coinsize)
@@ -91,7 +96,7 @@ all_blocks.add(coin)
 coin=Other("coin 2",(0,0,0),1215,150,colliding)
 all_blocks.add(coin)
 for i in range(5):
-	im=pygame.image.load('coins/'+str(i)+'.png')
+	im=pygame.image.load('coins'+os.path.sep+str(i)+'.png')
 	im=pygame.transform.scale(im,(coinsize,coinsize))
 	coins.append(im)
 
@@ -107,7 +112,7 @@ block=Wall((0,255,0),20,500,8,bricksize)
 all_blocks.add(block)
 block=Wall((0,255,0),600,400,8,bricksize)
 all_blocks.add(block)
-block=Wall((0,255,0),1200,200,1,bricksize)
+block=Wall((0,255,0),1200,250,1,bricksize)
 all_blocks.add(block)
 block=Wall((0,255,0),1700,200,1,bricksize)
 all_blocks.add(block)
@@ -122,7 +127,7 @@ def face(im):
 	else:
 		return im
 def playerpos():
-	return (player.rect.x-camera[0],player.rect.y-camera[1],player.rect.width,player.rect.height)
+	return (player.rect.x-camera[0],player.rect.y-5-camera[1],player.rect.width,player.rect.height)
 def collisions():
 	collide_list=pygame.sprite.spritecollide(player,all_blocks,False)
 	global colliding
@@ -172,9 +177,11 @@ while running:
 				player.vx=-5
 			elif e.key == pygame.K_UP:
 				if colliding:
+					jumping=0
 					player.vy=-5
 			elif e.key == pygame.K_SPACE:
 				if colliding:
+					jumping=0
 					player.vy=-6
 		elif e.type == pygame.KEYUP:
 			if e.key == pygame.K_RIGHT:
@@ -201,12 +208,17 @@ while running:
 			block.update()
 			block.show()
 	if not colliding:
-		if player.vy<-0.5:
+		jumping=jumping+1
+		if jumping<10:
+			screen.blit(face(jump[0]),playerpos())
+		elif jumping<20:
 			screen.blit(face(jump[1]),playerpos())
-		elif player.vy<0.5:
+		elif jumping<30 or player.vy<0:
+			screen.blit(face(jump[2]),playerpos())
+		elif player.vy<1:
 			screen.blit(face(jump[3]),playerpos())
 		else:
-			screen.blit(face(jump[3]),playerpos())
+			screen.blit(face(jump[4]),playerpos())
 	elif colliding and player.vx==0:
 		screen.blit(face(idle),playerpos())
 		imgcount=0
