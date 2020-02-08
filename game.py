@@ -23,17 +23,28 @@ class Player(sprite.Sprite):
 	def update(self):
 		self.rect.x+=self.vx
 		self.rect.y+=self.vy
+
+class Wall(sprite.Sprite):
+	def __init__(self,color,width,height):
+		super().__init__()
+		self.image=Surface([width,height])
+		self.image.fill(color)
+		self.image.set_colorkey(color)
+		self.color=color
+		self.rect=self.image.get_rect()
 	def show(self):
 		global screen,camera
 		draw.rect(screen,self.color,[self.rect.x-camera[0],self.rect.y-camera[1],self.rect.width,self.rect.height])
 
-player=Player((255,0,0),70,100)
+player=Player((0,0,0),70,100)
 player.rect.x=20
 player.rect.y=20
 all_blocks.add(player)
+idle=image.load('sprite0.png')
+idle=transform.scale(idle,(player.rect.width,player.rect.height))
 boy=[]
 imgcount=0
-for i in range(6):
+for i in range(10):
 	im=image.load('sprite'+str(i+1)+'.png')
 	im=transform.scale(im,(player.rect.width,player.rect.height))
 	boy.append(im)
@@ -43,11 +54,11 @@ for i in range(7):
 	im=transform.scale(im,(player.rect.width,player.rect.height))
 	jump.append(im)
 
-block=Player((0,255,0),500,50)
+block=Wall((0,255,0),500,50)
 block.rect.x=20
 block.rect.y=500
 all_blocks.add(block)
-block=Player((0,255,0),500,50)
+block=Wall((0,255,0),500,50)
 block.rect.x=600
 block.rect.y=400
 all_blocks.add(block)
@@ -63,6 +74,7 @@ def playerpos():
 	return (player.rect.x-camera[0],player.rect.y-camera[1],player.rect.width,player.rect.height)
 def collisions():
 	collide_list=sprite.spritecollide(player,all_blocks,False)
+	global colliding
 	colliding=False
 	for b in collide_list:
 		if not b==player:
@@ -120,17 +132,23 @@ while running:
 	elif player.rect.y-camera[1]<height/4:
 		camera[1]=player.rect.y-height/4
 	collisions()
+	player.update()
 	for block in all_blocks:
-		block.update()
-		block.show()
-	print(player.vy)
-	if player.vy<-4:
-		screen.blit(face(jump[1]),playerpos())
-	elif not colliding:
-		screen.blit(face(jump[5]),playerpos())
+		if not block==player:
+			block.show()
+	if not colliding:
+		if player.vy<-0.5:
+			screen.blit(face(jump[1]),playerpos())
+		elif player.vy<0.5:
+			screen.blit(face(jump[3]),playerpos())
+		else:
+			screen.blit(face(jump[3]),playerpos())
+	elif colliding and player.vx==0:
+		screen.blit(face(idle),playerpos())
+		imgcount=0
 	else:
-		imgcount=(imgcount+1)%60
-		screen.blit(boy[int(imgcount/10)],(player.rect.x-camera[0],player.rect.y-camera[1],player.rect.width,player.rect.height))
+		imgcount=(imgcount+1.5)%60
+		screen.blit(face(boy[int(imgcount/6)]),playerpos())
 	display.update()
 	clock.tick(60)
 quit()
