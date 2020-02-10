@@ -93,8 +93,11 @@ for i in range(7):
 coins=[]
 coin=Other("coin 1",(0,0,0),1035,350,coinsize)
 all_blocks.add(coin)
-coin=Other("coin 2",(0,0,0),1215,150,colliding)
+coin=Other("coin 2",(0,0,0),1215,150,coinsize)
 all_blocks.add(coin)
+for i in range(5):
+	coin=Other("coin "+str(i+3),(0,0,0),3015+bricksize*i,950,coinsize)
+	all_blocks.add(coin)
 for i in range(5):
 	im=pygame.image.load('coins'+os.path.sep+str(i)+'.png')
 	im=pygame.transform.scale(im,(coinsize,coinsize))
@@ -112,11 +115,15 @@ block=Wall((0,255,0),20,500,8,bricksize)
 all_blocks.add(block)
 block=Wall((0,255,0),600,400,8,bricksize)
 all_blocks.add(block)
-block=Wall((0,255,0),1200,250,1,bricksize)
+block=Wall((0,255,0),1200,220,1,bricksize)
 all_blocks.add(block)
 block=Wall((0,255,0),1700,200,1,bricksize)
 all_blocks.add(block)
 block=Wall((0,255,0),700,100,1,bricksize)
+all_blocks.add(block)
+block=Wall((0,255,0),2550,1000,1,bricksize)
+all_blocks.add(block)
+block=Wall((0,255,0),3000,1000,5,bricksize)
 all_blocks.add(block)
 
 a=0.1
@@ -189,7 +196,10 @@ while running:
 			elif e.key == pygame.K_LEFT:
 				pressed=False
 	screen.fill((100,255,255))
-	player.vy+=a
+	if player.vy<0:
+		player.vy+=a
+	else:
+		player.vy+=2*a
 	if player.rect.x-camera[0]<width/4:
 		camera[0]=player.rect.x-width/4
 	elif player.rect.x-camera[0]>width/2:
@@ -218,7 +228,7 @@ while running:
 		elif player.vy<1:
 			screen.blit(face(jump[3]),playerpos())
 		else:
-			screen.blit(face(jump[4]),playerpos())
+			screen.blit(face(jump[5]),playerpos())
 	elif colliding and player.vx==0:
 		screen.blit(face(idle),playerpos())
 		imgcount=0
