@@ -58,20 +58,24 @@ class Other(pygame.sprite.Sprite):
 			global screen,camera
 			screen.blit(self.imgs[int(self.count/12)],(self.rect.x-camera[0],self.rect.y-camera[1],50,50))
 class Wall(pygame.sprite.Sprite):
-	def __init__(self,color,x,y,blocks,bricksize):
+	def __init__(self,color,blocks,bricksize):
 		super().__init__()
-		self.image=pygame.Surface([bricksize*blocks,bricksize])
+		self.image=pygame.Surface([bricksize*blocks[2],bricksize*blocks[3]])
 		self.image.fill(color)
 		self.image.set_colorkey(color)
 		self.color=color
 		self.rect=self.image.get_rect()
-		self.rect.x=x
-		self.rect.y=y
+		self.rect.x=blocks[0]*bricksize
+		self.rect.y=blocks[1]*bricksize
 		self.blocks=blocks
 	def show(self):
-		global screen,camera,bricksize,brickimg
-		for i in range(self.blocks):
-			screen.blit(brickimg,(self.rect.x+i*bricksize-camera[0],self.rect.y-5-camera[1],bricksize,bricksize+5))
+		global screen,camera,bricksize,brickimgs
+		for i in range(self.blocks[2]):
+			for j in range(self.blocks[3]):
+				# found=False
+				# for b in earth:
+				# 	if self.blocks[0]-1>b[0] and self.blocks[0]+self.blocks
+				screen.blit(brickimgs[1],(self.rect.x+i*bricksize-camera[0],self.rect.y+j*bricksize-5-camera[1],bricksize,bricksize+5))
 		# pygame.draw.rect(screen,self.color,[self.rect.x-camera[0],self.rect.y-camera[1],self.rect.width,self.rect.height])
 
 player=Player("main",(255,0,0),60,100)
@@ -108,31 +112,26 @@ for i in range(5):
 	im=pygame.image.load('diamonds'+os.path.sep+str(i)+'.png')
 	im=pygame.transform.scale(im,(coinsize*2,coinsize*2))
 	diamonds.append(im)
-diamond=Other("diamond 0",(0,0,0),705,20,coinsize,diamonds)
+diamond=Other("diamond 0",(0,0,0),725,30,coinsize,diamonds)
 all_blocks.add(diamond)
 
 flowerimg=pygame.image.load('flower.png')
 flowerimg=pygame.transform.scale(flowerimg,(30,30))
 flowerimgrect=flowerimg.get_rect()
-flowerimgrect.x=720
-flowerimgrect.y=70
-brickimg=pygame.image.load('brick.png')
-brickimg=pygame.transform.scale(brickimg,(bricksize,bricksize))
+flowerimgrect.x=740
+flowerimgrect.y=85
 
-block=Wall((0,255,0),20,500,8,bricksize)
-all_blocks.add(block)
-block=Wall((0,255,0),600,400,8,bricksize)
-all_blocks.add(block)
-block=Wall((0,255,0),1200,220,1,bricksize)
-all_blocks.add(block)
-block=Wall((0,255,0),1700,200,1,bricksize)
-all_blocks.add(block)
-block=Wall((0,255,0),700,100,1,bricksize)
-all_blocks.add(block)
-block=Wall((0,255,0),2550,1000,1,bricksize)
-all_blocks.add(block)
-block=Wall((0,255,0),3000,1000,5,bricksize)
-all_blocks.add(block)
+brickimgs=[]
+for i in range(16):
+	brickimg=pygame.image.load('bricks/brick'+str(i)+'.png')
+	brickimg=pygame.transform.scale(brickimg,(bricksize,bricksize))
+	brickimgs.append(brickimg)
+
+earth=open("earth.data").read()
+earth=[list(map(int,x.split(','))) for x in earth.split()]
+for m in earth:
+	block=Wall((0,255,0),m,bricksize)
+	all_blocks.add(block)
 
 a=0.1
 friction=0.6
