@@ -159,11 +159,11 @@ def collisions():
 						if abs(player.vx)<0.6:
 							player.vx=0
 			elif player.rect.y+player.rect.height>b.rect.y and player.rect.y<b.rect.y+b.rect.height:
-				if player.rect.x<b.rect.x:
-					player.vx=-1
+				if player.rect.x<b.rect.x and player.vx>0:
+					player.vx=0
 					player.rect.x=b.rect.x-player.rect.width
-				elif player.rect.x>b.rect.x:
-					player.vx=1
+				elif player.rect.x>b.rect.x and player.vx<0:
+					player.vx=0
 					player.rect.x=b.rect.x+b.rect.width
 		elif isinstance(b,Other):
 			b.visible=False
