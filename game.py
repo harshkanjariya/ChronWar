@@ -1,4 +1,3 @@
-#hiiiii
 from datetime import datetime
 import os
 import pytz
@@ -39,7 +38,7 @@ class Player(pygame.sprite.Sprite):
 		self.rect.x+=self.vx
 		self.rect.y+=self.vy
 class Other(pygame.sprite.Sprite):
-	def __init__(self,name,color,x,y,coinsize):
+	def __init__(self,name,color,x,y,coinsize,imgs):
 		super().__init__()
 		self.image=pygame.Surface([coinsize,coinsize])
 		self.image.fill(color)
@@ -51,12 +50,13 @@ class Other(pygame.sprite.Sprite):
 		self.count=0
 		self.name=name
 		self.visible=True
+		self.imgs=imgs
 	def update(self):
 		self.count=(self.count+2)%60
 	def show(self):
 		if self.visible:
 			global screen,camera
-			screen.blit(coins[int(self.count/12)],(self.rect.x-camera[0],self.rect.y-camera[1],50,50))
+			screen.blit(self.imgs[int(self.count/12)],(self.rect.x-camera[0],self.rect.y-camera[1],50,50))
 class Wall(pygame.sprite.Sprite):
 	def __init__(self,color,x,y,blocks,bricksize):
 		super().__init__()
@@ -91,18 +91,25 @@ for i in range(7):
 	im=pygame.image.load('character'+os.path.sep+'jump'+str(i+1)+'.png')
 	# im=pygame.transform.scale(im,(player.rect.width,player.rect.height))
 	jump.append(im)
+
 coins=[]
-coin=Other("coin 1",(0,0,0),1035,350,coinsize)
-all_blocks.add(coin)
-coin=Other("coin 2",(0,0,0),1215,150,coinsize)
-all_blocks.add(coin)
-for i in range(5):
-	coin=Other("coin "+str(i+3),(0,0,0),3015+bricksize*i,950,coinsize)
-	all_blocks.add(coin)
 for i in range(5):
 	im=pygame.image.load('coins'+os.path.sep+str(i)+'.png')
 	im=pygame.transform.scale(im,(coinsize,coinsize))
 	coins.append(im)
+coin=Other("coin 1",(0,0,0),1035,350,coinsize,coins)
+all_blocks.add(coin)
+for i in range(5):
+	coin=Other("coin "+str(i+3),(0,0,0),3015+bricksize*i,950,coinsize,coins)
+	all_blocks.add(coin)
+
+diamonds=[]
+for i in range(5):
+	im=pygame.image.load('diamonds'+os.path.sep+str(i)+'.png')
+	im=pygame.transform.scale(im,(coinsize*2,coinsize*2))
+	diamonds.append(im)
+diamond=Other("diamond 0",(0,0,0),705,20,coinsize,diamonds)
+all_blocks.add(diamond)
 
 flowerimg=pygame.image.load('flower.png')
 flowerimg=pygame.transform.scale(flowerimg,(30,30))
