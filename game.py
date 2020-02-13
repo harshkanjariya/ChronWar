@@ -56,7 +56,7 @@ class Other(pygame.sprite.Sprite):
 	def show(self):
 		if self.visible:
 			global screen,camera
-			screen.blit(self.imgs[int(self.count/12)],(self.rect.x-camera[0],self.rect.y-camera[1],50,50))
+			screen.blit(self.imgs[int(self.count*len(self.imgs)/60)],(self.rect.x-camera[0],self.rect.y-camera[1],50,50))
 class Wall(pygame.sprite.Sprite):
 	def __init__(self,color,blocks,bricksize):
 		super().__init__()
@@ -70,12 +70,85 @@ class Wall(pygame.sprite.Sprite):
 		self.blocks=blocks
 	def show(self):
 		global screen,camera,bricksize,brickimgs
-		for i in range(self.blocks[2]):
-			for j in range(self.blocks[3]):
-				# found=False
-				# for b in earth:
-				# 	if self.blocks[0]-1>b[0] and self.blocks[0]+self.blocks
-				screen.blit(brickimgs[1],(self.rect.x+i*bricksize-camera[0],self.rect.y+j*bricksize-5-camera[1],bricksize,bricksize+5))
+		if self.blocks[3]==1:
+			if self.blocks[2]==1:
+				screen.blit(brickimgs[14],(self.rect.x+i*bricksize-camera[0],self.rect.y-camera[1],bricksize,bricksize))
+			else:
+				for i in range(self.blocks[2]):
+					if i==0:
+						img=brickimgs[13]
+					elif i==self.blocks[2]-1:
+						img=brickimgs[15]
+					else:
+						img=brickimgs[14]
+					screen.blit(img,(self.rect.x+i*bricksize-camera[0],self.rect.y-camera[1],bricksize,bricksize))
+		else:
+			for i in range(self.blocks[3]):
+				for j in range(self.blocks[2]):
+					img=brickimgs[4]
+					if i==0:
+						img=brickimgs[1]
+						if j==0:
+							img=brickimgs[0]
+							for b in earth:
+								if self.blocks[0]==b[0]+b[2]:
+									if self.blocks[1]==b[1]:
+										img=brickimgs[1]
+									elif self.blocks[1]<b[1]:
+										img=brickimgs[0]
+									else:
+										img=brickimgs[12]
+									break
+						elif j==self.blocks[2]-1:
+							img=brickimgs[2]
+							for b in earth:
+								if self.blocks[0]+self.blocks[2]==b[0]:
+									if self.blocks[1]==b[1]:
+										img=brickimgs[1]
+									elif self.blocks[1]<b[1]:
+										img=brickimgs[2]
+									else:
+										img=brickimgs[9]
+									break
+					elif i==self.blocks[3]-1:
+						if j==0:
+							img=brickimgs[6]
+							for b in earth:
+								if self.blocks[0]==b[0]+b[2]:
+									if self.blocks[1]+self.blocks[3]==b[1]+b[3]:
+										img=brickimgs[7]
+									elif self.blocks[1]+self.blocks[3]>b[1]+b[3]:
+										img=brickimgs[6]
+									else:
+										img=brickimgs[10]
+						elif j==self.blocks[2]-1:
+							img=brickimgs[8]
+							for b in earth:
+								if self.blocks[0]+self.blocks[2]==b[0]:
+									if self.blocks[1]+self.blocks[3]==b[1]+b[3]:
+										img=brickimgs[7]
+									elif self.blocks[1]+self.blocks[3]>b[1]+b[3]:
+										img=brickimgs[8]
+									else:
+										img=brickimgs[7]
+						else:
+							img=brickimgs[7]
+					else:
+						if j==0:
+							img=brickimgs[3]
+							for b in earth:
+								if self.blocks[0]==b[0]+b[2]:
+									if self.blocks[1]+i==b[1]:
+										img=brickimgs[10]
+										break
+						elif j==self.blocks[2]-1:
+							img=brickimgs[5]
+							for b in earth:
+								if self.blocks[0]+self.blocks[2]==b[0]:
+									if self.blocks[1]+i==b[1]:
+										img=brickimgs[11]
+										break
+					screen.blit(img,(self.rect.x+j*bricksize-camera[0],self.rect.y+i*bricksize-camera[1],bricksize,bricksize))
 		# pygame.draw.rect(screen,self.color,[self.rect.x-camera[0],self.rect.y-camera[1],self.rect.width,self.rect.height])
 
 player=Player("main",(255,0,0),60,100)
@@ -95,6 +168,13 @@ for i in range(7):
 	im=pygame.image.load('character'+os.path.sep+'jump'+str(i+1)+'.png')
 	# im=pygame.transform.scale(im,(player.rect.width,player.rect.height))
 	jump.append(im)
+
+bushes=[]
+im=pygame.image.load('grass0.png')
+im=pygame.transform.scale(im,(coinsize*3,coinsize*2))
+bushes.append(im)
+grass=Other("grass",(0,0,0),990,370,coinsize*3,bushes)
+all_blocks.add(grass)
 
 coins=[]
 for i in range(5):
@@ -119,7 +199,7 @@ flowerimg=pygame.image.load('flower.png')
 flowerimg=pygame.transform.scale(flowerimg,(30,30))
 flowerimgrect=flowerimg.get_rect()
 flowerimgrect.x=740
-flowerimgrect.y=85
+flowerimgrect.y=90
 
 brickimgs=[]
 for i in range(16):
@@ -172,10 +252,11 @@ def collisions():
 					player.vx=0
 					player.rect.x=b.rect.x+b.rect.width
 		elif isinstance(b,Other):
-			b.visible=False
-			all_blocks.remove(b)
-			del b
-			coingain.play()
+			if not b.name=="grass":
+				b.visible=False
+				all_blocks.remove(b)
+				del b
+				coingain.play()
 while running:
 	for e in pygame.event.get():
 		if e.type == pygame.QUIT:
