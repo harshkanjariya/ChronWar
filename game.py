@@ -72,13 +72,19 @@ class Wall(pygame.sprite.Sprite):
 		global screen,camera,bricksize,brickimgs
 		if self.blocks[3]==1:
 			if self.blocks[2]==1:
-				screen.blit(brickimgs[14],(self.rect.x+bricksize-camera[0],self.rect.y-camera[1],bricksize,bricksize))
+				screen.blit(brickimgs[14],(self.rect.x-camera[0],self.rect.y-camera[1],bricksize,bricksize))
 			else:
 				for i in range(self.blocks[2]):
 					if i==0:
 						img=brickimgs[13]
+						for b in earth:
+							if self.blocks[0]==b[0]+b[2]:
+								img=brickimgs[14]
 					elif i==self.blocks[2]-1:
 						img=brickimgs[15]
+						for b in earth:
+							if self.blocks[0]+self.blocks[2]==b[0]:
+								img=brickimgs[14]
 					else:
 						img=brickimgs[14]
 					screen.blit(img,(self.rect.x+i*bricksize-camera[0],self.rect.y-camera[1],bricksize,bricksize))
@@ -96,7 +102,7 @@ class Wall(pygame.sprite.Sprite):
 										img=brickimgs[1]
 									elif self.blocks[1]<b[1]:
 										img=brickimgs[0]
-									else:
+									elif self.blocks[1]>b[1] and self.blocks[1]<b[1]+b[3]:
 										img=brickimgs[12]
 									break
 						elif j==self.blocks[2]-1:
@@ -119,8 +125,8 @@ class Wall(pygame.sprite.Sprite):
 										img=brickimgs[7]
 									elif self.blocks[1]+self.blocks[3]>b[1]+b[3]:
 										img=brickimgs[6]
-									else:
-										img=brickimgs[10]
+									elif self.blocks[1]+self.blocks[3]<b[1]+b[3] and self.blocks[1]+self.blocks[3]>b[1]:
+										img=brickimgs[7]
 						elif j==self.blocks[2]-1:
 							img=brickimgs[8]
 							for b in earth:
@@ -129,7 +135,7 @@ class Wall(pygame.sprite.Sprite):
 										img=brickimgs[7]
 									elif self.blocks[1]+self.blocks[3]>b[1]+b[3]:
 										img=brickimgs[8]
-									else:
+									elif self.blocks[1]+self.blocks[3]<b[1]+b[3] and self.blocks[1]+self.blocks[3]>b[1]:
 										img=brickimgs[7]
 						else:
 							img=brickimgs[7]
@@ -198,7 +204,7 @@ for i in range(5):
 	im=pygame.image.load('diamonds'+os.path.sep+str(i)+'.png')
 	im=pygame.transform.scale(im,(coinsize*2,coinsize*2))
 	diamonds.append(im)
-diamond=Other("diamond 0",(0,0,0),835,30,coinsize,diamonds)
+diamond=Other("diamond 0",(0,0,0),1030,300,coinsize,diamonds)
 all_blocks.add(diamond)
 
 flowerimg=pygame.image.load('flower.png')
