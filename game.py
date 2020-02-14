@@ -72,7 +72,7 @@ class Wall(pygame.sprite.Sprite):
 		global screen,camera,bricksize,brickimgs
 		if self.blocks[3]==1:
 			if self.blocks[2]==1:
-				screen.blit(brickimgs[14],(self.rect.x+i*bricksize-camera[0],self.rect.y-camera[1],bricksize,bricksize))
+				screen.blit(brickimgs[14],(self.rect.x+bricksize-camera[0],self.rect.y-camera[1],bricksize,bricksize))
 			else:
 				for i in range(self.blocks[2]):
 					if i==0:
@@ -141,6 +141,9 @@ class Wall(pygame.sprite.Sprite):
 									if self.blocks[1]+i==b[1]:
 										img=brickimgs[10]
 										break
+									elif self.blocks[1]+i>b[1] and self.blocks[1]+i<b[1]+b[3]:
+										img=brickimgs[4]
+										break
 						elif j==self.blocks[2]-1:
 							img=brickimgs[5]
 							for b in earth:
@@ -148,12 +151,15 @@ class Wall(pygame.sprite.Sprite):
 									if self.blocks[1]+i==b[1]:
 										img=brickimgs[11]
 										break
+									elif self.blocks[1]+i>b[1] and self.blocks[1]+i<b[1]+b[3]:
+										img=brickimgs[4]
+										break
 					screen.blit(img,(self.rect.x+j*bricksize-camera[0],self.rect.y+i*bricksize-camera[1],bricksize,bricksize))
 		# pygame.draw.rect(screen,self.color,[self.rect.x-camera[0],self.rect.y-camera[1],self.rect.width,self.rect.height])
 
 player=Player("main",(255,0,0),60,100)
 player.rect.x=20
-player.rect.y=20
+player.rect.y=500
 all_blocks.add(player)
 idle=pygame.image.load('character'+os.path.sep+'idle.png')
 # idle=pygame.transform.scale(idle,(player.rect.width,player.rect.height))
@@ -169,19 +175,19 @@ for i in range(7):
 	# im=pygame.transform.scale(im,(player.rect.width,player.rect.height))
 	jump.append(im)
 
-bushes=[]
-im=pygame.image.load('grass0.png')
-im=pygame.transform.scale(im,(coinsize*3,coinsize*2))
-bushes.append(im)
-grass=Other("grass",(0,0,0),990,370,coinsize*3,bushes)
-all_blocks.add(grass)
+# bushes=[]
+# im=pygame.image.load('grass0.png')
+# im=pygame.transform.scale(im,(coinsize*3,coinsize*2))
+# bushes.append(im)
+# grass=Other("grass",(0,0,0),990,370,coinsize*3,bushes)
+# all_blocks.add(grass)
 
 coins=[]
 for i in range(5):
 	im=pygame.image.load('coins'+os.path.sep+str(i)+'.png')
 	im=pygame.transform.scale(im,(coinsize,coinsize))
 	coins.append(im)
-coin=Other("coin 1",(0,0,0),1035,350,coinsize,coins)
+coin=Other("coin 1",(0,0,0),1035,400,coinsize,coins)
 all_blocks.add(coin)
 for i in range(5):
 	coin=Other("coin "+str(i+3),(0,0,0),3015+bricksize*i,950,coinsize,coins)
@@ -192,13 +198,13 @@ for i in range(5):
 	im=pygame.image.load('diamonds'+os.path.sep+str(i)+'.png')
 	im=pygame.transform.scale(im,(coinsize*2,coinsize*2))
 	diamonds.append(im)
-diamond=Other("diamond 0",(0,0,0),725,30,coinsize,diamonds)
+diamond=Other("diamond 0",(0,0,0),835,30,coinsize,diamonds)
 all_blocks.add(diamond)
 
 flowerimg=pygame.image.load('flower.png')
 flowerimg=pygame.transform.scale(flowerimg,(30,30))
 flowerimgrect=flowerimg.get_rect()
-flowerimgrect.x=740
+flowerimgrect.x=850
 flowerimgrect.y=90
 
 brickimgs=[]
@@ -213,7 +219,7 @@ for m in earth:
 	block=Wall((0,255,0),m,bricksize)
 	all_blocks.add(block)
 
-a=0.1
+a=0.2
 friction=0.6
 def face(im):
 	if flip:
@@ -273,11 +279,11 @@ while running:
 			elif e.key == pygame.K_UP:
 				if colliding:
 					jumping=0
-					player.vy=-5
+					player.vy=-7
 			elif e.key == pygame.K_SPACE:
 				if colliding:
 					jumping=0
-					player.vy=-6
+					player.vy=-9
 		elif e.type == pygame.KEYUP:
 			if e.key == pygame.K_RIGHT:
 				pressed=False
@@ -288,6 +294,11 @@ while running:
 		player.vy+=a
 	else:
 		player.vy+=2*a
+	if not colliding and pressed:
+		if flip:
+			player.vx=-5
+		else:
+			player.vx=5
 	if player.rect.x-camera[0]<width/4:
 		camera[0]=player.rect.x-width/4
 	elif player.rect.x-camera[0]>width/2:
