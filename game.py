@@ -303,22 +303,22 @@ resumegame=pygame.image.load('menu/resume.png')
 resumegame=pygame.transform.scale(resumegame,(160,30))
 resumegamerect=mainboard.get_rect()
 resumegamerect.x=width/2-80
-resumegamerect.y=height/2-15-140
+resumegamerect.y=height/2-15-110
 newgame=pygame.image.load('menu/newgame.png')
 newgame=pygame.transform.scale(newgame,(200,30))
 newgamerect=mainboard.get_rect()
 newgamerect.x=width/2-100
-newgamerect.y=height/2-15-80
+newgamerect.y=height/2-15-40
 options=pygame.image.load('menu/options.png')
 options=pygame.transform.scale(options,(150,30))
 optionsrect=mainboard.get_rect()
 optionsrect.x=width/2-75
-optionsrect.y=height/2-15
+optionsrect.y=height/2-15+40
 exitm=pygame.image.load('menu/exit.png')
 exitm=pygame.transform.scale(exitm,(90,25))
 exitrect=mainboard.get_rect()
 exitrect.x=width/2-45
-exitrect.y=height/2-12+80
+exitrect.y=height/2-12+110
 menu=True
 def open_menu():
 	global menu,running
@@ -354,12 +354,12 @@ def open_menu():
 		pygame.display.update()
 		clock.tick(60)
 def start_game():
-	global running,pressed,colliding,player,flip,jumping
+	global running,pressed,colliding,player,flip,jumping,imgcount
 	while running:
 		for e in pygame.event.get():
 			if e.type == pygame.QUIT:
 				running=False
-				open_menu()
+				break
 			if e.type == pygame.KEYDOWN:
 				if e.key == pygame.K_RIGHT:
 					pressed=True
@@ -379,7 +379,7 @@ def start_game():
 						player.vy=-9
 				elif e.key == pygame.K_ESCAPE:
 					running=False
-					open_menu()
+					break
 			elif e.type == pygame.KEYUP:
 				if e.key == pygame.K_RIGHT:
 					pressed=False
