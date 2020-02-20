@@ -1,8 +1,12 @@
 from datetime import datetime
 import os
-import pytz
 import pygame
 import json
+from classes import *
+print(round(datetime.utcnow().timestamp()))
+d=datetime.fromtimestamp(60*60*24*365*30+3600*24*7)
+print(d)
+print(60*60*24*365*30+3600*24*7)
 pygame.mixer.pre_init(44100, 16, 2, 4096)
 pygame.init()
 screen=pygame.display.set_mode([1200,600])
@@ -21,149 +25,6 @@ coingain=pygame.mixer.Sound("coin.wav")
 all_blocks=pygame.sprite.Group()
 camera=[width/2,height/2]
 
-class Player(pygame.sprite.Sprite):
-	def __init__(self,name,color,width,height):
-		super().__init__()
-		self.image=pygame.Surface([width,height])
-		self.image.fill(color)
-		self.image.set_colorkey(color)
-		self.color=color
-		self.name=name
-		self.rect=self.image.get_rect()
-		self.vx=0
-		self.vy=0
-	def show(self):
-		global screen,camera
-		pygame.draw.rect(screen,self.color,(self.rect.x-camera[0],self.rect.y-camera[1],self.rect.width,self.rect.height))
-	def update(self):
-		self.rect.x+=self.vx
-		self.rect.y+=self.vy
-class Other(pygame.sprite.Sprite):
-	def __init__(self,name,color,x,y,coinsize,imgs):
-		super().__init__()
-		self.image=pygame.Surface([coinsize,coinsize])
-		self.image.fill(color)
-		self.image.set_colorkey(color)
-		self.color=color
-		self.rect=self.image.get_rect()
-		self.rect.x=x
-		self.rect.y=y
-		self.count=0
-		self.name=name
-		self.visible=True
-		self.imgs=imgs
-	def update(self):
-		self.count=(self.count+2)%60
-	def show(self):
-		if self.visible:
-			global screen,camera
-			screen.blit(self.imgs[int(self.count*len(self.imgs)/60)],(self.rect.x-camera[0],self.rect.y-camera[1],50,50))
-class Wall(pygame.sprite.Sprite):
-	def __init__(self,color,blocks,bricksize):
-		super().__init__()
-		self.image=pygame.Surface([bricksize*blocks[2],bricksize*blocks[3]])
-		self.image.fill(color)
-		self.image.set_colorkey(color)
-		self.color=color
-		self.rect=self.image.get_rect()
-		self.rect.x=blocks[0]*bricksize
-		self.rect.y=blocks[1]*bricksize
-		self.blocks=blocks
-	def show(self):
-		global screen,camera,bricksize,brickimgs
-		if self.blocks[3]==1:
-			if self.blocks[2]==1:
-				screen.blit(brickimgs[14],(self.rect.x-camera[0],self.rect.y-camera[1],bricksize,bricksize))
-			else:
-				for i in range(self.blocks[2]):
-					if i==0:
-						img=brickimgs[13]
-						for b in earth:
-							if self.blocks[0]==b[0]+b[2]:
-								img=brickimgs[14]
-					elif i==self.blocks[2]-1:
-						img=brickimgs[15]
-						for b in earth:
-							if self.blocks[0]+self.blocks[2]==b[0]:
-								img=brickimgs[14]
-					else:
-						img=brickimgs[14]
-					screen.blit(img,(self.rect.x+i*bricksize-camera[0],self.rect.y-camera[1],bricksize,bricksize))
-		else:
-			for i in range(self.blocks[3]):
-				for j in range(self.blocks[2]):
-					img=brickimgs[4]
-					if i==0:
-						img=brickimgs[1]
-						if j==0:
-							img=brickimgs[0]
-							for b in earth:
-								if self.blocks[0]==b[0]+b[2]:
-									if self.blocks[1]==b[1]:
-										img=brickimgs[1]
-									elif self.blocks[1]<b[1]:
-										img=brickimgs[0]
-									elif self.blocks[1]>b[1] and self.blocks[1]<b[1]+b[3]:
-										img=brickimgs[12]
-									break
-						elif j==self.blocks[2]-1:
-							img=brickimgs[2]
-							for b in earth:
-								if self.blocks[0]+self.blocks[2]==b[0]:
-									if self.blocks[1]==b[1]:
-										img=brickimgs[1]
-									elif self.blocks[1]<b[1]:
-										img=brickimgs[2]
-									else:
-										img=brickimgs[9]
-									break
-					elif i==self.blocks[3]-1:
-						if j==0:
-							img=brickimgs[6]
-							for b in earth:
-								if self.blocks[0]==b[0]+b[2]:
-									if self.blocks[1]+self.blocks[3]==b[1]+b[3]:
-										img=brickimgs[7]
-									elif self.blocks[1]+self.blocks[3]>b[1]+b[3]:
-										img=brickimgs[6]
-									elif self.blocks[1]+self.blocks[3]<b[1]+b[3] and self.blocks[1]+self.blocks[3]>b[1]:
-										img=brickimgs[7]
-						elif j==self.blocks[2]-1:
-							img=brickimgs[8]
-							for b in earth:
-								if self.blocks[0]+self.blocks[2]==b[0]:
-									if self.blocks[1]+self.blocks[3]==b[1]+b[3]:
-										img=brickimgs[7]
-									elif self.blocks[1]+self.blocks[3]>b[1]+b[3]:
-										img=brickimgs[8]
-									elif self.blocks[1]+self.blocks[3]<b[1]+b[3] and self.blocks[1]+self.blocks[3]>b[1]:
-										img=brickimgs[7]
-						else:
-							img=brickimgs[7]
-					else:
-						if j==0:
-							img=brickimgs[3]
-							for b in earth:
-								if self.blocks[0]==b[0]+b[2]:
-									if self.blocks[1]+i==b[1]:
-										img=brickimgs[10]
-										break
-									elif self.blocks[1]+i>b[1] and self.blocks[1]+i<b[1]+b[3]:
-										img=brickimgs[4]
-										break
-						elif j==self.blocks[2]-1:
-							img=brickimgs[5]
-							for b in earth:
-								if self.blocks[0]+self.blocks[2]==b[0]:
-									if self.blocks[1]+i==b[1]:
-										img=brickimgs[11]
-										break
-									elif self.blocks[1]+i>b[1] and self.blocks[1]+i<b[1]+b[3]:
-										img=brickimgs[4]
-										break
-					screen.blit(img,(self.rect.x+j*bricksize-camera[0],self.rect.y+i*bricksize-camera[1],bricksize,bricksize))
-		# pygame.draw.rect(screen,self.color,[self.rect.x-camera[0],self.rect.y-camera[1],self.rect.width,self.rect.height])
-
 player=Player("main",(255,0,0),60,100)
 all_blocks.add(player)
 idle=pygame.image.load('character'+os.path.sep+'idle.png')
@@ -180,49 +41,53 @@ for i in range(7):
 	# im=pygame.transform.scale(im,(player.rect.width,player.rect.height))
 	jump.append(im)
 
-# bushes=[]
-# im=pygame.image.load('grass0.png')
-# im=pygame.transform.scale(im,(coinsize*3,coinsize*2))
-# bushes.append(im)
-# grass=Other("grass",(0,0,0),990,370,coinsize*3,bushes)
-# all_blocks.add(grass)
-
-coins=[]
+assets={}
+assets["coins"]=[]
 for i in range(5):
 	im=pygame.image.load('coins'+os.path.sep+str(i)+'.png')
 	im=pygame.transform.scale(im,(coinsize,coinsize))
-	coins.append(im)
+	assets["coins"].append(im)
 
-diamonds=[]
+assets["diamonds"]=[]
 for i in range(5):
 	im=pygame.image.load('diamonds'+os.path.sep+str(i)+'.png')
 	im=pygame.transform.scale(im,(coinsize*2,coinsize*2))
-	diamonds.append(im)
+	assets["diamonds"].append(im)
 
 def resume_old():
 	otherdata=json.load(open('other.data','r'))
+	for x in all_blocks:
+		if isinstance(x,Other):
+			all_blocks.remove(x)
 	for o in otherdata['other']:
-		obj=None
 		if o['v']:
-			if o['n']=="coin":
-				obj=Other("coin",(0,0,0),o['x'],o['y'],coinsize,coins)
-			else:
-				obj=Other("diamond",(0,0,0),o['x'],o['y'],coinsize,diamonds)
+			obj=Other(o['n'],(0,0,0),o['x'],o['y'],coinsize,assets[o['n'].split()[0]])
 			all_blocks.add(obj)
+	print(all_blocks)
 	playerdata=open('player.data','r').read()
 	playerdata=playerdata.split()
 	playerdata[0]=list(map(int,playerdata[0].split(',')))
 	player.rect.x=playerdata[0][0]
 	player.rect.y=playerdata[0][1]
-
 def newgame_load():
-	coin=Other("coin",(0,0,0),1035,400,coinsize,coins)
-	all_blocks.add(coin)
-	for i in range(5):
-		coin=Other("coin",(0,0,0),3015+bricksize*i,950,coinsize,coins)
-		all_blocks.add(coin)
-	diamond=Other("diamond",(0,0,0),1030,300,coinsize,diamonds)
-	all_blocks.add(diamond)
+	leveldata=open('level1.data','r').read().split()
+	objtype=""
+	timenow=datetime.utcnow().timestamp()
+	for x in all_blocks:
+		if isinstance(x,Other):
+			all_blocks.remove(x)
+	idx=0
+	for l in leveldata:
+		try:
+			l.index(',')
+			l=list(map(int,l.split(',')))	
+			if timenow>l[0]:
+				idx+=1
+				obj=Other(objtype+" "+str(idx),(0,0,0),l[1],l[2],coinsize,assets[objtype])
+				all_blocks.add(obj)
+		except ValueError:
+			objtype=l
+			idx=0
 	player.rect.x=10
 	player.rect.y=500
 
@@ -232,14 +97,19 @@ flowerimgrect=flowerimg.get_rect()
 flowerimgrect.x=1050
 flowerimgrect.y=570
 
+showhole=0
+hole=pygame.image.load('hole.png')
+hole=pygame.transform.scale(hole,(45,150))
+holerect=hole.get_rect()
+
 brickimgs=[]
 for i in range(16):
 	brickimg=pygame.image.load('bricks/brick'+str(i)+'.png')
 	brickimg=pygame.transform.scale(brickimg,(bricksize,bricksize))
 	brickimgs.append(brickimg)
 
-earth=open("earth.data").read()
-earth=[list(map(int,x.split(','))) for x in earth.split()]
+earth=open("earth.data").read().split()
+earth=[list(map(int,x.split(','))) for x in earth]
 for m in earth:
 	block=Wall((0,255,0),m,bricksize)
 	all_blocks.add(block)
@@ -283,7 +153,8 @@ def collisions():
 					player.vx=0
 					# player.rect.x=b.rect.x+b.rect.width
 		elif isinstance(b,Other):
-			if b.name=="coin" or b.name=="diamond":
+			s=b.name.split()[0]
+			if s=="coins" or s=="diamonds":
 				b.visible=False
 				all_blocks.remove(b)
 				del b
@@ -354,7 +225,7 @@ def open_menu():
 		pygame.display.update()
 		clock.tick(60)
 def start_game():
-	global running,pressed,colliding,player,flip,jumping,imgcount
+	global running,pressed,colliding,player,flip,jumping,imgcount,showhole,hole
 	while running:
 		for e in pygame.event.get():
 			if e.type == pygame.QUIT:
@@ -380,6 +251,13 @@ def start_game():
 				elif e.key == pygame.K_ESCAPE:
 					running=False
 					break
+				elif e.key == pygame.K_p:
+					if flip:
+						holerect.x=player.rect.x-100
+					else:
+						holerect.x=player.rect.x+100
+					holerect.y=player.rect.y-30
+					showhole=datetime.utcnow().timestamp()
 			elif e.type == pygame.KEYUP:
 				if e.key == pygame.K_RIGHT:
 					pressed=False
@@ -407,13 +285,20 @@ def start_game():
 		cloudirect.x-=1
 		screen.blit(flowerimg,(flowerimgrect.x-camera[0],flowerimgrect.y-camera[1],flowerimgrect.width,flowerimgrect.height))
 		screen.blit(cloudi,(cloudirect.x-camera[0],cloudirect.y-camera[1],cloudirect.width,cloudirect.height))
-		player.update()
+		if showhole>0:
+			now=datetime.utcnow().timestamp()
+			if now-showhole>5:
+				showhole=0
+			else:
+				screen.blit(hole,(holerect.x-camera[0],holerect.y-camera[1],holerect.width,holerect.height))
 		for block in all_blocks:
 			if isinstance(block,Wall):
-				block.show()
+				block.show(brickimgs,screen,camera,earth,bricksize)
 			elif isinstance(block,Other):
 				block.update()
-				block.show()
+				block.show(screen,camera)
+			elif isinstance(block,Player):
+				block.update()
 		if not colliding:
 			jumping=jumping+1
 			if jumping<10:
