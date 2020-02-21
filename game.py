@@ -3,10 +3,10 @@ import os
 import pygame
 import json
 from classes import *
-print(round(datetime.utcnow().timestamp()))
-d=datetime.fromtimestamp(60*60*24*365*30+3600*24*7)
-print(d)
-print(60*60*24*365*30+3600*24*7)
+# print(round(datetime.utcnow().timestamp()))
+# d=datetime.fromtimestamp(60*60*24*365*50+60*60*24*11+60*60*18.5)
+# print(d)
+# print(60*60*24*365*50+60*60*24*11+60*60*18.5)
 pygame.mixer.pre_init(44100, 16, 2, 4096)
 pygame.init()
 screen=pygame.display.set_mode([1200,600])
@@ -16,6 +16,7 @@ jumping=0
 pressed=False
 flip=False
 colliding=False
+temperzone=False
 coinsize=30
 bricksize=60
 clock=pygame.time.Clock()
@@ -24,6 +25,7 @@ pygame.mixer.init()
 coingain=pygame.mixer.Sound("coin.wav")
 all_blocks=pygame.sprite.Group()
 camera=[width/2,height/2]
+mytime=0
 
 player=Player("main",(255,0,0),60,100)
 all_blocks.add(player)
@@ -55,6 +57,7 @@ for i in range(5):
 	assets["diamonds"].append(im)
 
 def resume_old():
+	global timenow,mytime
 	otherdata=json.load(open('other.data','r'))
 	for x in all_blocks:
 		if isinstance(x,Other):
@@ -63,13 +66,14 @@ def resume_old():
 		if o['v']:
 			obj=Other(o['n'],(0,0,0),o['x'],o['y'],coinsize,assets[o['n'].split()[0]])
 			all_blocks.add(obj)
-	print(all_blocks)
 	playerdata=open('player.data','r').read()
 	playerdata=playerdata.split()
+	mytime=int(playerdata[1])
 	playerdata[0]=list(map(int,playerdata[0].split(',')))
 	player.rect.x=playerdata[0][0]
 	player.rect.y=playerdata[0][1]
 def newgame_load():
+	global mytime
 	leveldata=open('level1.data','r').read().split()
 	objtype=""
 	timenow=datetime.utcnow().timestamp()
@@ -88,6 +92,7 @@ def newgame_load():
 		except ValueError:
 			objtype=l
 			idx=0
+	mytime=60*60*24*365*50+60*60*24*11+60*60*18.5-timenow
 	player.rect.x=10
 	player.rect.y=500
 
@@ -98,6 +103,7 @@ flowerimgrect.x=1050
 flowerimgrect.y=570
 
 showhole=0
+holepos=0
 hole=pygame.image.load('hole.png')
 hole=pygame.transform.scale(hole,(45,150))
 holerect=hole.get_rect()
@@ -224,9 +230,138 @@ def open_menu():
 		screen.blit(resumegame,resumegamerect)
 		pygame.display.update()
 		clock.tick(60)
+def goto_temperzone():
+	global temperzone,mytime
+	player.vx=0
+	temperzone=True
+	bigfont=pygame.font.Font(None,90)
+	time=datetime.utcnow().timestamp()+mytime
+	dd=datetime.fromtimestamp(time).day
+	mm=datetime.fromtimestamp(time).month
+	yyyy=datetime.fromtimestamp(time).year
+	hh=datetime.fromtimestamp(time).hour
+	MM=datetime.fromtimestamp(time).minute
+	ss=datetime.fromtimestamp(time).second
+	pos=0
+	while temperzone:
+		for e in pygame.event.get():
+			if e.type == pygame.KEYDOWN:
+				if e.key==pygame.K_ESCAPE:
+					temperzone=False
+				elif e.key==pygame.K_RIGHT:
+					pos=(pos+1)%6
+				elif e.key==pygame.K_LEFT:
+					pos=(pos+5)%6
+				elif e.key==pygame.K_UP:
+					if pos==0:
+						time+=60*60*24
+					if pos==1:
+						time+=60*60*24*31
+					if pos==2:
+						time+=60*60*24*365
+					if pos==3:
+						time+=60*60
+					if pos==4:
+						time+=60
+					if pos==5:
+						time+=1
+					dd=datetime.fromtimestamp(time).day
+					mm=datetime.fromtimestamp(time).month
+					yyyy=datetime.fromtimestamp(time).year
+					hh=datetime.fromtimestamp(time).hour
+					MM=datetime.fromtimestamp(time).minute
+					ss=datetime.fromtimestamp(time).second
+				elif e.key==pygame.K_DOWN:
+					if pos==0:
+						time-=60*60*24
+					if pos==1:
+						time-=60*60*24*31
+					if pos==2:
+						time-=60*60*24*365
+					if pos==3:
+						time-=60*60
+					if pos==4:
+						time-=60
+					if pos==5:
+						time-=1
+					dd=datetime.fromtimestamp(time).day
+					mm=datetime.fromtimestamp(time).month
+					yyyy=datetime.fromtimestamp(time).year
+					hh=datetime.fromtimestamp(time).hour
+					MM=datetime.fromtimestamp(time).minute
+					ss=datetime.fromtimestamp(time).second
+			if e.type == pygame.QUIT:
+				menu=False
+		screen.fill((0,255,0))
+
+		text=font.render('day',1,(0,0,0))
+		textpos=text.get_rect(centerx=width/2-350,centery=height-220)
+		screen.blit(text,textpos)
+		text=font.render('month',1,(0,0,0))
+		textpos=text.get_rect(centerx=width/2-250,centery=height-220)
+		screen.blit(text,textpos)
+		text=font.render('year',1,(0,0,0))
+		textpos=text.get_rect(centerx=width/2-100,centery=height-220)
+		screen.blit(text,textpos)
+		text=font.render('hour',1,(0,0,0))
+		textpos=text.get_rect(centerx=width/2+150,centery=height-220)
+		screen.blit(text,textpos)
+		text=font.render('minute',1,(0,0,0))
+		textpos=text.get_rect(centerx=width/2+250,centery=height-220)
+		screen.blit(text,textpos)
+		text=font.render('second',1,(0,0,0))
+		textpos=text.get_rect(centerx=width/2+350,centery=height-220)
+		screen.blit(text,textpos)
+
+		if pos==0:
+			pygame.draw.rect(screen,(255,255,255),(width/2-400,height-200,99,99),2)
+		else:
+			pygame.draw.rect(screen,(255,255,255),(width/2-400,height-200,99,99))
+		text=bigfont.render(str(dd),1,(0,0,0))
+		textpos=text.get_rect(centerx=width/2-350,centery=height-150)
+		screen.blit(text,textpos)
+		if pos==1:
+			pygame.draw.rect(screen,(255,255,255),(width/2-300,height-200,99,99),2)
+		else:
+			pygame.draw.rect(screen,(255,255,255),(width/2-300,height-200,99,99))
+		text=bigfont.render(str(mm),1,(0,0,0))
+		textpos=text.get_rect(centerx=width/2-250,centery=height-150)
+		screen.blit(text,textpos)
+		if pos==2:
+			pygame.draw.rect(screen,(255,255,255),(width/2-200,height-200,199,99),2)
+		else:
+			pygame.draw.rect(screen,(255,255,255),(width/2-200,height-200,199,99))
+		text=bigfont.render(str(yyyy),1,(0,0,0))
+		textpos=text.get_rect(centerx=width/2-100,centery=height-150)
+		screen.blit(text,textpos)
+		if pos==3:
+			pygame.draw.rect(screen,(255,255,255),(width/2+100,height-200,99,99),2)
+		else:
+			pygame.draw.rect(screen,(255,255,255),(width/2+100,height-200,99,99))
+		text=bigfont.render(str(hh),1,(0,0,0))
+		textpos=text.get_rect(centerx=width/2+150,centery=height-150)
+		screen.blit(text,textpos)
+		if pos==4:
+			pygame.draw.rect(screen,(255,255,255),(width/2+200,height-200,99,99),2)
+		else:
+			pygame.draw.rect(screen,(255,255,255),(width/2+200,height-200,99,99))
+		text=bigfont.render(str(MM),1,(0,0,0))
+		textpos=text.get_rect(centerx=width/2+250,centery=height-150)
+		screen.blit(text,textpos)
+		if pos==5:
+			pygame.draw.rect(screen,(255,255,255),(width/2+300,height-200,99,99),2)
+		else:
+			pygame.draw.rect(screen,(255,255,255),(width/2+300,height-200,99,99))
+		text=bigfont.render(str(ss),1,(0,0,0))
+		textpos=text.get_rect(centerx=width/2+350,centery=height-150)
+		screen.blit(text,textpos)
+
+		screen.blit(idle,(100,100,player.rect.width,player.rect.height))
+		pygame.display.update()
+		clock.tick(60)
 def start_game():
-	global running,pressed,colliding,player,flip,jumping,imgcount,showhole,hole
-	while running:
+	global running,pressed,colliding,player,flip,jumping,imgcount,showhole,hole,temperzone,holepos,mytime
+	while running and not temperzone:
 		for e in pygame.event.get():
 			if e.type == pygame.QUIT:
 				running=False
@@ -252,12 +387,19 @@ def start_game():
 					running=False
 					break
 				elif e.key == pygame.K_p:
-					if flip:
-						holerect.x=player.rect.x-100
+					if showhole==0:
+						if colliding:
+							if flip:
+								holepos=-1
+								holerect.x=player.rect.x-100
+							else:
+								holepos=1
+								holerect.x=player.rect.x+100
+							holerect.y=player.rect.y-30
+							showhole=datetime.utcnow().timestamp()
 					else:
-						holerect.x=player.rect.x+100
-					holerect.y=player.rect.y-30
-					showhole=datetime.utcnow().timestamp()
+						showhole=0
+						holepos=0
 			elif e.type == pygame.KEYUP:
 				if e.key == pygame.K_RIGHT:
 					pressed=False
@@ -289,6 +431,7 @@ def start_game():
 			now=datetime.utcnow().timestamp()
 			if now-showhole>5:
 				showhole=0
+				holepos=0
 			else:
 				screen.blit(hole,(holerect.x-camera[0],holerect.y-camera[1],holerect.width,holerect.height))
 		for block in all_blocks:
@@ -312,12 +455,62 @@ def start_game():
 			else:
 				screen.blit(face(jump[5]),playerpos())
 		elif colliding and player.vx==0:
-			screen.blit(face(idle),playerpos())
+			if holepos==0:
+				screen.blit(face(idle),playerpos())
+			elif player.rect.x<holerect.x+holerect.width and holepos>0:
+				if player.rect.x+player.rect.width<holerect.x+holerect.width/2:
+					screen.blit(face(idle),playerpos())
+				elif player.rect.x>holerect.x+holerect.width/2:
+					player.rect.x=holerect.x
+					temptime=datetime.utcnow().timestamp()
+					goto_temperzone()
+					mytime-=datetime.utcnow().timestamp()-temptime
+				else:
+					screen.blit(face(idle),(player.rect.x-camera[0],player.rect.y-camera[1]),(0,0,holerect.x+holerect.width/2-player.rect.x,player.rect.height))					
+			elif holepos>0:
+				holepos=-1
+			elif player.rect.x+player.rect.width>holerect.x and holepos<0:
+				if player.rect.x>holerect.x+holerect.width/2:
+					screen.blit(face(idle),playerpos())
+				elif player.rect.x+player.rect.width<holerect.x+holerect.width/2:
+					player.rect.x=holerect.x
+					temptime=datetime.utcnow().timestamp()
+					goto_temperzone()
+					mytime-=datetime.utcnow().timestamp()-temptime
+				else:
+					screen.blit(face(idle),(holerect.x+holerect.width/2-camera[0],player.rect.y-camera[1]),(holerect.x+holerect.width/2-player.rect.x,0,player.rect.width,player.rect.height))
+			elif holepos<0:
+				holepos=1
 			imgcount=0
 		else:
 			imgcount=(imgcount+1.5)%60
-			screen.blit(face(boy[int(imgcount/6)]),playerpos())
-		text=font.render('Date and Time : '+datetime.utcnow().strftime("%d/%m/%Y %H:%M:%S"),1,(0,0,0))
+			if holepos==0:
+				screen.blit(face(boy[int(imgcount/6)]),playerpos())
+			elif player.rect.x<holerect.x+holerect.width and holepos>0:
+				if player.rect.x+player.rect.width<holerect.x+holerect.width/2:
+					screen.blit(face(boy[int(imgcount/6)]),playerpos())
+				elif player.rect.x>holerect.x+holerect.width/2:
+					player.rect.x=holerect.x
+					temptime=datetime.utcnow().timestamp()
+					goto_temperzone()
+					mytime-=datetime.utcnow().timestamp()-temptime
+				else:
+					screen.blit(face(boy[int(imgcount/6)]),(player.rect.x-camera[0],player.rect.y-camera[1]),(0,0,holerect.x+holerect.width/2-player.rect.x,player.rect.height))					
+			elif holepos>0:
+				holepos=-1
+			elif player.rect.x+player.rect.width>holerect.x and holepos<0:
+				if player.rect.x>holerect.x+holerect.width/2:
+					screen.blit(face(boy[int(imgcount/6)]),playerpos())
+				elif player.rect.x+player.rect.width<holerect.x+holerect.width/2:
+					player.rect.x=holerect.x
+					temptime=datetime.utcnow().timestamp()
+					goto_temperzone()
+					mytime-=datetime.utcnow().timestamp()-temptime
+				else:
+					screen.blit(face(boy[int(imgcount/6)]),(holerect.x+holerect.width/2-camera[0],player.rect.y-camera[1]),(holerect.x+holerect.width/2-player.rect.x,0,player.rect.width,player.rect.height))
+			elif holepos<0:
+				holepos=1
+		text=font.render('Date and Time : '+datetime.fromtimestamp(datetime.utcnow().timestamp()+mytime).strftime("%d/%m/%Y %H:%M:%S"),1,(0,0,0))
 		textpos=text.get_rect(centerx=screen.get_width()/2)
 		screen.blit(text,textpos)
 		pygame.display.update()
@@ -325,7 +518,7 @@ def start_game():
 	save_game()
 def save_game():
 	global player,all_blocks
-	open('player.data','w').write(str(player.rect.x)+','+str(player.rect.y))
+	open('player.data','w').write(str(player.rect.x)+','+str(player.rect.y)+'\n'+str(round(mytime)))
 	othr=[]
 	for o in all_blocks:
 		if isinstance(o,Other):
