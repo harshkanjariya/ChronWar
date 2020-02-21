@@ -242,16 +242,16 @@ def goto_temperzone():
 	hh=datetime.fromtimestamp(time).hour
 	MM=datetime.fromtimestamp(time).minute
 	ss=datetime.fromtimestamp(time).second
-	pos=0
+	pos=6
 	while temperzone:
 		for e in pygame.event.get():
 			if e.type == pygame.KEYDOWN:
 				if e.key==pygame.K_ESCAPE:
 					temperzone=False
 				elif e.key==pygame.K_RIGHT:
-					pos=(pos+1)%6
+					pos=(pos+1)%7
 				elif e.key==pygame.K_LEFT:
-					pos=(pos+5)%6
+					pos=(pos+6)%7
 				elif e.key==pygame.K_UP:
 					if pos==0:
 						time+=60*60*24
@@ -293,6 +293,10 @@ def goto_temperzone():
 			if e.type == pygame.QUIT:
 				menu=False
 		screen.fill((0,255,0))
+
+		text=font.render('Temper Zone',1,(0,0,0))
+		textpos=text.get_rect(centerx=width/2,centery=30)
+		screen.blit(text,textpos)
 
 		text=font.render('day',1,(0,0,0))
 		textpos=text.get_rect(centerx=width/2-350,centery=height-220)
@@ -354,6 +358,14 @@ def goto_temperzone():
 			pygame.draw.rect(screen,(255,255,255),(width/2+300,height-200,99,99))
 		text=bigfont.render(str(ss),1,(0,0,0))
 		textpos=text.get_rect(centerx=width/2+350,centery=height-150)
+		screen.blit(text,textpos)
+
+		if pos==6:
+			pygame.draw.rect(screen,(255,255,255),(width/2-100,height-99,199,99),2)
+		else:
+			pygame.draw.rect(screen,(255,255,255),(width/2-100,height-99,199,99))
+		text=bigfont.render('Jump',1,(0,0,0))
+		textpos=text.get_rect(centerx=width/2,centery=height-50)
 		screen.blit(text,textpos)
 
 		screen.blit(idle,(100,100,player.rect.width,player.rect.height))
