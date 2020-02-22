@@ -10,6 +10,9 @@ class Player(pygame.sprite.Sprite):
 		self.rect=self.image.get_rect()
 		self.vx=0
 		self.vy=0
+		self.time=0
+		self.coins=0
+		self.time_energy=0
 	def show(self):
 		global screen,camera
 		pygame.draw.rect(screen,self.color,(self.rect.x-camera[0],self.rect.y-camera[1],self.rect.width,self.rect.height))
