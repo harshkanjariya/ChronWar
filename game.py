@@ -163,11 +163,8 @@ mainboardrect.x=width/2-150
 mainboardrect.y=height/2-200
 
 menu=True
-windo=tkinter.Tk()
-windo.geometry("168x75")
-tkinter.Label(windo,text="Enter Your Name").grid(row=0,column=0,columnspan=2)
-en=tkinter.Entry(windo)
-en.grid(row=1,column=0,columnspan=2)
+windo=''
+en=''
 socks=['']
 trd=['']
 mytime=0
@@ -185,16 +182,14 @@ def reading(sock):
 			if d=="temper":
 				friendtemper=True
 			if ',' in d:
-				frnd=list(map(int,d.split(',')))
+				frnd=d.split(',')
+				friendflip=frnd[5]=='True'
+				frnd=list(map(int,frnd[0:5]))
 				if len(frnd)==5:
 					friend=frnd
 					friendtemper=False
 				else:
 					print('recieved:',d)
-			elif '=' in d:
-				data=d.split('=')
-				if data[0]=='flip':
-					friendflip=(data[1]=='True')
 			elif ':' in d:
 				data=d.split(';')
 				for b in all_blocks:
@@ -206,6 +201,8 @@ def get_text_and_new():
 	global windo,player,en,running,serversock,socks,trd
 	player.name=en.get()
 	windo.destroy()
+	windo=''
+	en=''
 	serversock=socket.socket()
 	serversock.bind(('',5554))
 	serversock.listen(1)
@@ -219,6 +216,8 @@ def get_text_and_join():
 	global windo,player,en,running,socks,trd
 	player.name=en.get()
 	windo.destroy()
+	windo=''
+	en=''
 	s=socket.socket()
 	s.connect(('127.0.0.1',5554))
 	socks[0]=s
@@ -227,10 +226,8 @@ def get_text_and_join():
 	trd[0].start()
 	newgame_load()
 	start_game()
-tkinter.Button(windo,command=get_text_and_join,text="Join").grid(row=2,column=0)
-tkinter.Button(windo,command=get_text_and_new,text="Start New").grid(row=2,column=1)
 def open_menu():
-	global menu,running,menuview
+	global menu,running,menuview,windo,en
 	f=pygame.font.Font(None,50)
 	newtext=f.render('New Game',1,(0,0,0))
 	newtextrect=newtext.get_rect(centerx=width/2,centery=height/2-40)
@@ -252,6 +249,13 @@ def open_menu():
 							save_game()
 							return
 						elif newtextrect.collidepoint(e.pos):
+							windo=tkinter.Tk()
+							windo.geometry("168x75")
+							en=tkinter.Entry(windo)
+							en.grid(row=1,column=0,columnspan=2)
+							tkinter.Label(windo,text="Enter Your Name").grid(row=0,column=0,columnspan=2)
+							tkinter.Button(windo,command=get_text_and_join,text="Join").grid(row=2,column=0)
+							tkinter.Button(windo,command=get_text_and_new,text="Start New").grid(row=2,column=1)
 							windo.mainloop()
 						elif resumegamerect.collidepoint(e.pos):
 							running=True
@@ -610,7 +614,7 @@ def start_game():
 				holepos=1
 		if not isinstance(socks[0],str):
 			try:
-				socks[0].send(bytes('<'+str(player.rect.x)+','+str(player.rect.y)+','+str(sendimgtype)+','+str(sendimgpos)+','+str(int(player.time))+'>','utf-8'))
+				socks[0].send(bytes('<'+str(player.rect.x)+','+str(player.rect.y)+','+str(sendimgtype)+','+str(sendimgpos)+','+str(int(player.time))+','+str(flip)+'>','utf-8'))
 			except:
 				print('unable to send!')
 				socks[0]=''
