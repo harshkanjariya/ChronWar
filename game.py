@@ -204,7 +204,7 @@ def reading(sock):
 					friend.y=frnd[1]
 					friend.img=frnd[2]
 					friend.imgpos=frnd[3]
-					friend.time=frnd[4]
+					friend.time=frnd[4]-datetime.utcnow().timestamp()
 					friend.temper=False
 				else:
 					print('recieved:',d)
@@ -654,7 +654,7 @@ def start_game():
 				holepos=1
 		if not isinstance(socks[0],str):
 			try:
-				socks[0].send(bytes('<'+str(player.rect.x)+','+str(player.rect.y)+','+str(sendimgtype)+','+str(sendimgpos)+','+str(int(player.time))+','+str(flip)+'>','utf-8'))
+				socks[0].send(bytes('<'+str(player.rect.x)+','+str(player.rect.y)+','+str(sendimgtype)+','+str(sendimgpos)+','+str(int(player.time+datetime.utcnow().timestamp()))+','+str(flip)+'>','utf-8'))
 			except:
 				print('unable to send!')
 				socks[0]=''
