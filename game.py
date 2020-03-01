@@ -36,7 +36,7 @@ class Friend():
 		self.y=0
 		self.img=0
 		self.imgnum=0
-		self.time=''
+		self.time=0
 		self.name=''
 		self.temper=False
 		self.flip=False
@@ -65,7 +65,7 @@ def resume_old():
 	if connectiontype=='server':
 		start_sever(friend.name)
 	elif connectiontype=='client':
-		start_client(friend.name)
+		start_client('',friend.name)
 def newgame_load():
 	leveldata=open('level1.data','r').read().split()
 	objtype=""
@@ -179,6 +179,9 @@ mainboardrect.y=height/2-150
 menu=True
 windo=''
 en=''
+lb=''
+startbtn=''
+joinbtn=''
 socks=['']
 trd=['']
 mytime=0
@@ -229,10 +232,10 @@ def start_sever(n):
 	if n=='':
 		newgame_load()
 		start_game()
-def start_client(n):
+def start_client(ip,n):
 	global player,running,socks,trd
 	s=socket.socket()
-	s.connect(('127.0.0.1',5554))
+	s.connect((ip,5554))
 	socks[0]=s
 	running=True
 	friend.name=str(socks[0].recv(1024),'utf-8')
@@ -249,15 +252,24 @@ def get_text_and_new():
 	windo=''
 	en=''
 	start_sever('')
-def get_text_and_join():
+def connect_to_ip():
 	global windo,en
-	player.name=en.get()
+	ip=en.get()
 	windo.destroy()
 	windo=''
 	en=''
-	start_client('')
+	start_client(ip,'')
+def get_text_and_select_ip():
+	global windo,en,lb,startbtn,joinbtn
+	player.name=en.get()
+	en.delete(0,tkinter.END)
+	en.insert(0,'192.168.')
+	joinbtn.grid_forget()
+	startbtn.grid_forget()
+	lb.configure(text="Enter Ip")
+	tkinter.Button(windo,command=connect_to_ip,text="Connect").grid(row=2,column=0,columnspan=2)
 def open_menu():
-	global menu,running,menuview,windo,en
+	global menu,running,menuview,windo,en,lb,startbtn,joinbtn
 	f=pygame.font.Font(None,50)
 	newtext=f.render('New Game',1,(0,0,0))
 	newtextrect=newtext.get_rect(centerx=width/2,centery=height/2+10)
@@ -285,9 +297,12 @@ def open_menu():
 							windo.geometry("168x75")
 							en=tkinter.Entry(windo)
 							en.grid(row=1,column=0,columnspan=2)
-							tkinter.Label(windo,text="Enter Your Name").grid(row=0,column=0,columnspan=2)
-							tkinter.Button(windo,command=get_text_and_join,text="Join").grid(row=2,column=0)
-							tkinter.Button(windo,command=get_text_and_new,text="Start New").grid(row=2,column=1)
+							lb=tkinter.Label(windo,text="Enter Your Name")
+							lb.grid(row=0,column=0,columnspan=2)
+							joinbtn=tkinter.Button(windo,command=get_text_and_select_ip,text="Join")
+							joinbtn.grid(row=2,column=0)
+							startbtn=tkinter.Button(windo,command=get_text_and_new,text="Start New")
+							startbtn.grid(row=2,column=1)
 							windo.mainloop()
 						elif resumegamerect.collidepoint(e.pos):
 							running=True
@@ -658,7 +673,7 @@ def start_game():
 			except:
 				print('unable to send!')
 				socks[0]=''
-		if not friend.temper and friend.time==int(player.time):
+		if not friend.temper and int(friend.time)>int(player.time-5) and int(friend.time)<int(player.time+5):
 			if friend.img==1:
 				screen.blit(frndface(boy[friend.imgpos],friend.flip),frndpos(friend))
 			elif friend.img==2:
