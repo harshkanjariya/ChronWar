@@ -30,9 +30,17 @@ sendimgtype=-1
 
 player=Player("main",(255,0,0),60,100)
 all_blocks.add(player)
-friend=[0,0,0,0,'']
-friendtemper=False
-friendflip=False
+class Friend():
+	def __init__(self):
+		self.x=0
+		self.y=0
+		self.img=0
+		self.imgnum=0
+		self.time=''
+		self.name=''
+		self.temper=False
+		self.flip=False
+friend=Friend()
 def resume_old():
 	global timenow
 	otherdata=json.load(open('other.data','r'))
@@ -46,12 +54,18 @@ def resume_old():
 		all_blocks.add(obj)
 	playerdata=open('player.data','r').read()
 	playerdata=playerdata.split()
-	player.name=playerdata[0]
+	player.name,connectiontype=playerdata[0].split(',')
 	player.time=int(playerdata[2])
 	player.time_energy=int(playerdata[3])
+	player.coins=int(playerdata[4])
+	friend.name=playerdata[5]
 	playerdata[1]=list(map(int,playerdata[1].split(',')))
 	player.rect.x=playerdata[1][0]
 	player.rect.y=playerdata[1][1]
+	if connectiontype=='server':
+		start_sever(friend.name)
+	elif connectiontype=='client':
+		start_client(friend.name)
 def newgame_load():
 	leveldata=open('level1.data','r').read().split()
 	objtype=""
@@ -108,7 +122,7 @@ def frndface(im,fl):
 def playerpos():
 	return (player.rect.x-camera[0],player.rect.y-5-camera[1],player.rect.width,player.rect.height)
 def frndpos(fr):
-	return (fr[0]-camera[0],fr[1]-5-camera[1],player.rect.width,player.rect.height)
+	return (fr.x-camera[0],fr.y-5-camera[1],player.rect.width,player.rect.height)
 def collisions():
 	collide_list=pygame.sprite.spritecollide(player,all_blocks,False)
 	global colliding,socks
@@ -160,7 +174,7 @@ cloudirect.x=1000
 cloudirect.y=200
 
 mainboardrect.x=width/2-150
-mainboardrect.y=height/2-200
+mainboardrect.y=height/2-150
 
 menu=True
 windo=''
@@ -169,7 +183,7 @@ socks=['']
 trd=['']
 mytime=0
 def reading(sock):
-	global running,screen,player,camera,friend,all_blocks,friendtemper,mytime,friendflip
+	global running,screen,player,camera,friend,all_blocks,mytime
 	while running:
 		d=str(sock.recv(1024),'utf-8')
 		if '\n' in d and 'exit' in d.split():
@@ -180,14 +194,18 @@ def reading(sock):
 			e=d.find('>')
 			d=d[s+1:e]
 			if d=="temper":
-				friendtemper=True
+				friend.temper=True
 			if ',' in d:
 				frnd=d.split(',')
-				friendflip=frnd[5]=='True'
+				friend.flip=frnd[5]=='True'
 				frnd=list(map(int,frnd[0:5]))
 				if len(frnd)==5:
-					friend=frnd
-					friendtemper=False
+					friend.x=frnd[0]
+					friend.y=frnd[1]
+					friend.img=frnd[2]
+					friend.imgpos=frnd[3]
+					friend.time=frnd[4]
+					friend.temper=False
 				else:
 					print('recieved:',d)
 			elif ':' in d:
@@ -197,48 +215,62 @@ def reading(sock):
 						b.endtime=float(data[1])
 	print('reading end')
 serversock=''
-def get_text_and_new():
-	global windo,player,en,running,serversock,socks,trd
-	player.name=en.get()
-	windo.destroy()
-	windo=''
-	en=''
+def start_sever(n):
+	global player,running,serversock,socks,trd
 	serversock=socket.socket()
 	serversock.bind(('',5554))
 	serversock.listen(1)
 	socks[0],addr=serversock.accept()
 	running=True
+	socks[0].send(bytes(player.name,'utf-8'))
+	friend.name=str(socks[0].recv(1024),'utf-8')
 	trd[0]=threading.Thread(target=reading,args=[socks[0]])
 	trd[0].start()
-	newgame_load()
-	start_game()
-def get_text_and_join():
-	global windo,player,en,running,socks,trd
-	player.name=en.get()
-	windo.destroy()
-	windo=''
-	en=''
+	if n=='':
+		newgame_load()
+		start_game()
+def start_client(n):
+	global player,running,socks,trd
 	s=socket.socket()
 	s.connect(('127.0.0.1',5554))
 	socks[0]=s
 	running=True
+	friend.name=str(socks[0].recv(1024),'utf-8')
+	socks[0].send(bytes(player.name,'utf-8'))
 	trd[0]=threading.Thread(target=reading,args=[socks[0]])
 	trd[0].start()
-	newgame_load()
-	start_game()
+	if n=='':
+		newgame_load()
+		start_game()
+def get_text_and_new():
+	global windo,en
+	player.name=en.get()
+	windo.destroy()
+	windo=''
+	en=''
+	start_sever('')
+def get_text_and_join():
+	global windo,en
+	player.name=en.get()
+	windo.destroy()
+	windo=''
+	en=''
+	start_client('')
 def open_menu():
 	global menu,running,menuview,windo,en
 	f=pygame.font.Font(None,50)
 	newtext=f.render('New Game',1,(0,0,0))
-	newtextrect=newtext.get_rect(centerx=width/2,centery=height/2-40)
+	newtextrect=newtext.get_rect(centerx=width/2,centery=height/2+10)
 	options=f.render('Options',1,(0,0,0))
-	optionsrect=options.get_rect(centerx=width/2,centery=height/2+40)
+	optionsrect=options.get_rect(centerx=width/2,centery=height/2+90)
 	exitm=f.render('Exit',1,(0,0,0))
-	exitrect=exitm.get_rect(centerx=width/2,centery=height/2+110)
+	exitrect=exitm.get_rect(centerx=width/2,centery=height/2+160)
 	resumegame=f.render('Resume',1,(0,0,0))
-	resumegamerect=resumegame.get_rect(centerx=width/2,centery=height/2-110)
-	waiting=f.render('waiting...',1,(0,0,0))
-	waitingrect=resumegame.get_rect(centerx=width/2,centery=height/2-110)
+	resumegamerect=resumegame.get_rect(centerx=width/2,centery=height/2-60)
+	titlesize=0
+	titleboard=pygame.image.load('logo.png')
+	titleboard=pygame.transform.scale(titleboard,(400,100))
+	titleboardrect=titleboard.get_rect(centerx=width/2,centery=75)
 	while menu:
 		if not running:
 			for e in pygame.event.get():
@@ -268,6 +300,14 @@ def open_menu():
 			if cloudirect.x<-400:
 				cloudirect.x=1200
 			screen.blit(cloudi,cloudirect)
+			if titlesize<100:
+				titlesize+=5
+				tempboard=pygame.image.load('logo.png')
+				tempboard=pygame.transform.scale(tempboard,(titlesize*4,titlesize))
+				tempboardrect=tempboard.get_rect(centerx=width/2,centery=75)
+				screen.blit(tempboard,tempboardrect)
+			else:
+				screen.blit(titleboard,titleboardrect)
 			screen.blit(mainboard,mainboardrect)
 			screen.blit(newtext,newtextrect)
 			screen.blit(options,optionsrect)
@@ -443,7 +483,7 @@ def goto_temperzone():
 		clock.tick(60)
 	
 def start_game():
-	global running,pressed,colliding,player,flip,jumping,imgcount,showhole,hole,temperzone,holepos,friend,friendtemper,friendflip
+	global running,pressed,colliding,player,flip,jumping,imgcount,showhole,hole,temperzone,holepos,friend
 	while running and not temperzone:
 		for e in pygame.event.get():
 			if e.type == pygame.QUIT:
@@ -618,13 +658,13 @@ def start_game():
 			except:
 				print('unable to send!')
 				socks[0]=''
-		if not friendtemper and friend[4]==int(player.time):
-			if friend[2]==1:
-				screen.blit(frndface(boy[friend[3]],friendflip),frndpos(friend))
-			elif friend[2]==2:
-				screen.blit(frndface(jump[friend[3]],friendflip),frndpos(friend))
+		if not friend.temper and friend.time==int(player.time):
+			if friend.img==1:
+				screen.blit(frndface(boy[friend.imgpos],friend.flip),frndpos(friend))
+			elif friend.img==2:
+				screen.blit(frndface(jump[friend.imgpos],friend.flip),frndpos(friend))
 			else:
-				screen.blit(frndface(idle,friendflip),frndpos(friend))
+				screen.blit(frndface(idle,friend.flip),frndpos(friend))
 		screen.blit(energy,(energyrect.x,energyrect.y),(0,0,player.time_energy/(360*24*365),energyrect.height))
 		pygame.draw.rect(screen,(0,0,0),energyrect,1)
 		text=font.render('Date and Time : '+datetime.fromtimestamp(datetime.utcnow().timestamp()+player.time).strftime("%d/%m/%Y %H:%M:%S"),1,(0,0,0))
@@ -634,7 +674,7 @@ def start_game():
 		clock.tick(60)
 	save_game()
 def save_game():
-	global player,all_blocks,socks,serversock,menuview
+	global player,all_blocks,socks,serversock
 	if not isinstance(socks[0],str):
 		try:
 			socks[0].send(bytes('\nexit\n','utf-8'))
@@ -642,15 +682,21 @@ def save_game():
 		except:
 			print('unable to send')
 		socks[0]=''
+	hadserver=False
 	if not isinstance(serversock,str):
 		serversock.close()
-	menuview=1
+		hadserver=True
 	f=open('player.data','w')
-	f.write(player.name+'\n')
+	f.write(player.name)
+	if hadserver:
+		f.write(',server\n')
+	else:
+		f.write(',client\n')
 	f.write(str(player.rect.x)+','+str(player.rect.y)+'\n')
 	f.write(str(round(player.time))+'\n')
 	f.write(str(round(player.time_energy))+'\n')
-	f.write(str(player.coins))
+	f.write(str(player.coins)+'\n')
+	f.write(friend.name)
 	f.close()
 	othr=[]
 	for o in all_blocks:
