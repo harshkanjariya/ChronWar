@@ -48,7 +48,7 @@ def resume_old():
 		if isinstance(x,Other):
 			all_blocks.remove(x)
 	for o in otherdata['other']:
-		obj=Other(o['n'],(0,0,0),o['x'],o['y'],coinsize,assets[o['n'].split()[0]])
+		obj=Other(o['n'],(0,0,0),o['x'],o['y'],coinsize,assets[o['n'].split(":")[0]])
 		obj.starttime=o['s']
 		obj.endtime=o['e']
 		all_blocks.add(obj)
@@ -65,7 +65,7 @@ def resume_old():
 	if connectiontype=='server':
 		start_sever(friend.name)
 	elif connectiontype=='client':
-		start_client('',friend.name)
+		start_client('127.0.0.1',friend.name)
 def newgame_load():
 	leveldata=open('level1.data','r').read().split()
 	objtype=""
@@ -498,7 +498,7 @@ def goto_temperzone():
 		clock.tick(60)
 	
 def start_game():
-	global running,pressed,colliding,player,flip,jumping,imgcount,showhole,hole,temperzone,holepos,friend
+	global running,pressed,colliding,player,flip,jumping,imgcount,showhole,hole,temperzone,holepos,friend,sendimgpos,sendimgtype
 	while running and not temperzone:
 		for e in pygame.event.get():
 			if e.type == pygame.QUIT:
@@ -670,7 +670,8 @@ def start_game():
 		if not isinstance(socks[0],str):
 			try:
 				socks[0].send(bytes('<'+str(player.rect.x)+','+str(player.rect.y)+','+str(sendimgtype)+','+str(sendimgpos)+','+str(int(player.time+datetime.utcnow().timestamp()))+','+str(flip)+'>','utf-8'))
-			except:
+			except Exception as e:
+				print(e)
 				print('unable to send!')
 				socks[0]=''
 		if not friend.temper and int(friend.time)>int(player.time-5) and int(friend.time)<int(player.time+5):
