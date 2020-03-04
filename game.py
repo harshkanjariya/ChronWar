@@ -64,8 +64,8 @@ def resume_old():
 	player.rect.y=playerdata[1][1]
 	if connectiontype=='server':
 		start_sever(friend.name)
-	elif connectiontype=='client':
-		start_client('127.0.0.1',friend.name)
+	else:
+		start_client(connectiontype,friend.name)
 def newgame_load():
 	leveldata=open('level1.data','r').read().split()
 	objtype=""
@@ -186,7 +186,7 @@ socks=['']
 trd=['']
 mytime=0
 def reading(sock):
-	global running,screen,player,camera,friend,all_blocks,mytime
+	global running,screen,player,camera,friend,all_blocks,mytime,holerect,holepos,showhole
 	while running:
 		d=str(sock.recv(1024),'utf-8')
 		if '\n' in d and 'exit' in d.split():
@@ -211,6 +211,16 @@ def reading(sock):
 					friend.temper=False
 				else:
 					print('recieved:',d)
+			elif '_' in d:
+				data=d.split('_')
+				if data[0]=='hole':
+					holerect.x=int(data[1])
+					holerect.y=int(data[2])
+					if flip:
+						holepos=-1
+					else:
+						holepos=1
+					showhole=datetime.utcnow().timestamp()
 			elif ':' in d:
 				data=d.split(';')
 				for b in all_blocks:
@@ -253,12 +263,12 @@ def get_text_and_new():
 	en=''
 	start_sever('')
 def connect_to_ip():
-	global windo,en
-	ip=en.get()
+	global windo,en,serversock
+	serversock=en.get()
 	windo.destroy()
 	windo=''
 	en=''
-	start_client(ip,'')
+	start_client(serversock,'')
 def get_text_and_select_ip():
 	global windo,en,lb,startbtn,joinbtn
 	player.name=en.get()
@@ -545,6 +555,7 @@ def start_game():
 								holerect.x=player.rect.x+100
 							holerect.y=player.rect.y-30
 							showhole=datetime.utcnow().timestamp()
+							socks[0].send(bytes('<hole_'+str(holerect.x)+'_'+str(holerect.y)+'>','utf-8'))
 					else:
 						showhole=0
 						holepos=0
@@ -671,7 +682,7 @@ def start_game():
 			try:
 				socks[0].send(bytes('<'+str(player.rect.x)+','+str(player.rect.y)+','+str(sendimgtype)+','+str(sendimgpos)+','+str(int(player.time+datetime.utcnow().timestamp()))+','+str(flip)+'>','utf-8'))
 			except Exception as e:
-				print(e)
+				print(socks[0])
 				print('unable to send!')
 				socks[0]=''
 		if not friend.temper and int(friend.time)>int(player.time-5) and int(friend.time)<int(player.time+5):
@@ -694,6 +705,7 @@ def save_game():
 	if not isinstance(socks[0],str):
 		try:
 			socks[0].send(bytes('\nexit\n','utf-8'))
+			print(socks[0])
 			socks[0].close()
 		except:
 			print('unable to send')
@@ -707,7 +719,7 @@ def save_game():
 	if hadserver:
 		f.write(',server\n')
 	else:
-		f.write(',client\n')
+		f.write(','+serversock+'\n')
 	f.write(str(player.rect.x)+','+str(player.rect.y)+'\n')
 	f.write(str(round(player.time))+'\n')
 	f.write(str(round(player.time_energy))+'\n')
