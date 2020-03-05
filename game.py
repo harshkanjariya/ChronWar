@@ -1,5 +1,5 @@
 from datetime import datetime,timedelta
-import os,socket,json,threading
+import os,socket,json,threading,random
 import pygame
 from classes import *
 from assets import *
@@ -37,6 +37,7 @@ class Friend():
 		self.img=0
 		self.imgnum=0
 		self.time=0
+		self.holepos=0
 		self.name=''
 		self.temper=False
 		self.flip=False
@@ -66,7 +67,9 @@ def resume_old():
 		start_sever(friend.name)
 	else:
 		start_client(connectiontype,friend.name)
+cloudposition=[1000,500]
 def newgame_load():
+	global cloudposition
 	leveldata=open('level1.data','r').read().split()
 	objtype=""
 	timenow=datetime.utcnow().timestamp()
@@ -78,15 +81,18 @@ def newgame_load():
 		try:
 			l.index(',')
 			l=list(map(int,l.split(',')))
-			if timenow>l[0]:
-				idx+=1
-			obj=Other(objtype+":"+str(idx),(0,0,0),l[1],l[2],coinsize,assets[objtype])
-			obj.starttime=l[0]
-			if len(l)>3:
-				obj.endtime=l[3]
+			if objtype=="cloud":
+				cloudposition=l
 			else:
-				obj.endtime=9999999999999999999999
-			all_blocks.add(obj)
+				if timenow>l[0]:
+					idx+=1
+				obj=Other(objtype+":"+str(idx),(0,0,0),l[1],l[2],coinsize,assets[objtype])
+				obj.starttime=l[0]
+				if len(l)>3:
+					obj.endtime=l[3]
+				else:
+					obj.endtime=9999999999999999999999
+				all_blocks.add(obj)
 		except ValueError:
 			objtype=l
 			idx=0
@@ -217,9 +223,10 @@ def reading(sock):
 					holerect.x=int(data[1])
 					holerect.y=int(data[2])
 					if flip:
-						holepos=-1
+						friend.holepos=-1
 					else:
-						holepos=1
+						friend.holepos=1
+					holepos=1
 					showhole=datetime.utcnow().timestamp()
 			elif ':' in d:
 				data=d.split(';')
@@ -506,9 +513,13 @@ def goto_temperzone():
 		screen.blit(idle,(100,100,player.rect.width,player.rect.height))
 		pygame.display.update()
 		clock.tick(60)
-	
+rain=[]
+for x in range(100):
+	rain.append([random.randrange(0,cloudirect.width,1),random.randrange(0,200,1),random.randrange(10,30,1)/10,random.randrange(1,30,1)])
 def start_game():
-	global running,pressed,colliding,player,flip,jumping,imgcount,showhole,hole,temperzone,holepos,friend,sendimgpos,sendimgtype
+	global running,pressed,colliding,all_blocks,player,flip,jumping,imgcount,showhole,hole,temperzone,holepos,friend,sendimgpos,sendimgtype,cloudposition
+	cloudirect.x=cloudposition[0]
+	cloudirect.x=cloudposition[1]
 	while running and not temperzone:
 		for e in pygame.event.get():
 			if e.type == pygame.QUIT:
@@ -583,14 +594,26 @@ def start_game():
 		elif player.rect.y-camera[1]<height/4:
 			camera[1]=player.rect.y-height/4
 		collisions()
-		cloudirect.x-=1
+		# cloudirect.x-=1
 		screen.blit(flowerimg,(flowerimgrect.x-camera[0],flowerimgrect.y-camera[1],flowerimgrect.width,flowerimgrect.height))
+		for r in rain:
+			r[1]+=r[2]
+			# for b in all_blocks:
+			# 	if isinstance(b,Wall):
+					# if b.rect.collidepoint([r[0],r[1]]):
+					# if r[0]>b.rect.x and r[0]<b.rect.x+b.rect.width and r[1]>b.rect.y and r[1]<b.rect.y+b.rect.height:
+			if r[1]>350:
+				r[1]=random.randrange(0,cloudirect.height/2,1)
+				r[0]=random.randrange(0,cloudirect.width,1)
+						# break
+			pygame.draw.rect(screen,(0,200,0),(r[0]+cloudirect.x-camera[0],r[1]+cloudirect.y+cloudirect.height/2-camera[1],r[2],r[3]))
 		screen.blit(cloudi,(cloudirect.x-camera[0],cloudirect.y-camera[1],cloudirect.width,cloudirect.height))
 		if showhole>0:
 			now=datetime.utcnow().timestamp()
 			if now-showhole>5:
 				showhole=0
 				holepos=0
+				friend.holepos=0
 			else:
 				screen.blit(hole,(holerect.x-camera[0],holerect.y-camera[1],holerect.width,holerect.height))
 		for block in all_blocks:
@@ -686,12 +709,39 @@ def start_game():
 				print('unable to send!')
 				socks[0]=''
 		if not friend.temper and int(friend.time)>int(player.time-5) and int(friend.time)<int(player.time+5):
+			temp=0
 			if friend.img==1:
-				screen.blit(frndface(boy[friend.imgpos],friend.flip),frndpos(friend))
+				temp=boy[friend.imgpos]
+				# screen.blit(frndface(boy[friend.imgpos],friend.flip),frndpos(friend))
 			elif friend.img==2:
-				screen.blit(frndface(jump[friend.imgpos],friend.flip),frndpos(friend))
+				temp=jump[friend.imgpos]
+				# screen.blit(frndface(jump[friend.imgpos],friend.flip),frndpos(friend))
 			else:
-				screen.blit(frndface(idle,friend.flip),frndpos(friend))
+				temp=idle
+				# screen.blit(frndface(idle,friend.flip),frndpos(friend))
+			temp=frndface(temp,friend.flip)
+			# screen.blit(temp,frndpos(friend))
+			if not showhole==0:
+				if friend.x>holerect.x+holerect.width:
+					friend.holepos=1
+				elif friend.x+player.rect.width<holerect.x:
+					friend.holepos=-1
+			if friend.holepos==0 or friend.img==2:
+				screen.blit(temp,frndpos(friend))
+			elif friend.holepos<0:
+				if friend.x+player.rect.width<holerect.x+holerect.width/2:
+					screen.blit(temp,frndpos(friend))
+				elif friend.x>holerect.x+holerect.width/2:
+					friend.x=holerect.x
+				else:
+					screen.blit(temp,(friend.x-camera[0],friend.y-camera[1]),(0,0,holerect.x+holerect.width/2-friend.x,player.rect.height))
+			elif friend.holepos>0:
+				if friend.x>holerect.x+holerect.width/2:
+					screen.blit(temp,frndpos(friend))
+				elif friend.x+player.rect.width<holerect.x+holerect.width/2:
+					friend.x=holerect.x
+				else:
+					screen.blit(temp,(holerect.x+holerect.width/2-camera[0],friend.y-camera[1]),(holerect.x+holerect.width/2-friend.x,0,player.rect.width,player.rect.height))
 		screen.blit(energy,(energyrect.x,energyrect.y),(0,0,player.time_energy/(360*24*365),energyrect.height))
 		pygame.draw.rect(screen,(0,0,0),energyrect,1)
 		text=font.render('Date and Time : '+datetime.fromtimestamp(datetime.utcnow().timestamp()+player.time).strftime("%d/%m/%Y %H:%M:%S"),1,(0,0,0))
