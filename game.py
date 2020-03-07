@@ -19,6 +19,7 @@ pressed=False
 flip=False
 colliding=False
 temperzone=False
+gameover=False
 clock=pygame.time.Clock()
 font=pygame.font.Font(None,30)
 pygame.mixer.init()
@@ -28,6 +29,8 @@ camera=[width/2,height/2]
 sendimgpos=-1
 sendimgtype=-1
 
+cloudposition=[1000,500]
+shopposition=[0,0]
 player=Player("main",(255,0,0),60,100)
 all_blocks.add(player)
 class Friend():
@@ -43,7 +46,24 @@ class Friend():
 		self.flip=False
 friend=Friend()
 def resume_old():
-	global timenow
+	global cloudposition,shopposition,timenow
+	leveldata=open('level1.data','r').read().split()
+	objtype=""
+	idx=0
+	for l in leveldata:
+		try:
+			l.index(',')
+			l=list(map(int,l.split(',')))
+			if objtype=="cloud":
+				cloudposition=l
+			if objtype=="shop":
+				shopposition=l
+			elif objtype=="coins" or objtype=="diamonds":
+				pass
+		except ValueError:
+			objtype=l
+			idx=0
+
 	otherdata=json.load(open('other.data','r'))
 	for x in all_blocks:
 		if isinstance(x,Other):
@@ -57,9 +77,10 @@ def resume_old():
 	playerdata=playerdata.split()
 	player.name,connectiontype=playerdata[0].split(',')
 	player.time=int(playerdata[2])
-	player.time_energy=int(playerdata[3])
-	player.coins=int(playerdata[4])
-	friend.name=playerdata[5]
+	player.blood=int(playerdata[3])
+	player.time_energy=int(playerdata[4])
+	player.coins=int(playerdata[5])
+	friend.name=playerdata[6]
 	playerdata[1]=list(map(int,playerdata[1].split(',')))
 	player.rect.x=playerdata[1][0]
 	player.rect.y=playerdata[1][1]
@@ -67,9 +88,8 @@ def resume_old():
 		start_sever(friend.name)
 	else:
 		start_client(connectiontype,friend.name)
-cloudposition=[1000,500]
 def newgame_load():
-	global cloudposition
+	global cloudposition,shopposition
 	leveldata=open('level1.data','r').read().split()
 	objtype=""
 	timenow=datetime.utcnow().timestamp()
@@ -83,7 +103,9 @@ def newgame_load():
 			l=list(map(int,l.split(',')))
 			if objtype=="cloud":
 				cloudposition=l
-			else:
+			if objtype=="shop":
+				shopposition=l
+			elif objtype=="coins" or objtype=="diamonds":
 				if timenow>l[0]:
 					idx+=1
 				obj=Other(objtype+":"+str(idx),(0,0,0),l[1],l[2],coinsize,assets[objtype])
@@ -98,13 +120,14 @@ def newgame_load():
 			idx=0
 	player.time=60*60*24*365*50+60*60*24*11+60*60*18.5-timenow
 	player.time_energy=0
+	player.blood=1000
 	player.rect.x=10
 	player.rect.y=500
 
 flowerimgrect.x=1050
 flowerimgrect.y=570
 
-energyrect.x=width-300
+energyrect.x=width-250
 energyrect.y=30
 
 earth=open("earth.data").read().split()
@@ -286,22 +309,47 @@ def get_text_and_select_ip():
 	lb.configure(text="Enter Ip")
 	tkinter.Button(windo,command=connect_to_ip,text="Connect").grid(row=2,column=0,columnspan=2)
 def open_menu():
-	global menu,running,menuview,windo,en,lb,startbtn,joinbtn
+	global menu,running,menuview,windo,en,lb,startbtn,joinbtn,gameover
 	f=pygame.font.Font(None,50)
 	newtext=f.render('New Game',1,(0,0,0))
-	newtextrect=newtext.get_rect(centerx=width/2,centery=height/2+10)
 	options=f.render('Options',1,(0,0,0))
-	optionsrect=options.get_rect(centerx=width/2,centery=height/2+90)
 	exitm=f.render('Exit',1,(0,0,0))
-	exitrect=exitm.get_rect(centerx=width/2,centery=height/2+160)
 	resumegame=f.render('Resume',1,(0,0,0))
-	resumegamerect=resumegame.get_rect(centerx=width/2,centery=height/2-60)
+	newtextrect=newtext.get_rect(centerx=width/2,centery=height/2+15)
+	optionsrect=options.get_rect(centerx=width/2,centery=height/2+85)
+	exitrect=exitm.get_rect(centerx=width/2,centery=height/2+160)
+	resumegamerect=resumegame.get_rect(centerx=width/2,centery=height/2-50)
+	resumable=True
+	if open('player.data','r').read()=='':
+		resumable=False
+		newtextrect=newtext.get_rect(centerx=width/2,centery=height/2-50)
+		optionsrect=options.get_rect(centerx=width/2,centery=height/2+50)
+		exitrect=exitm.get_rect(centerx=width/2,centery=height/2+150)
+	gameovr=f.render('Game Over',1,(0,255,0))
+	gameovrrect=gameovr.get_rect(centerx=width/2,centery=height/2)
 	titlesize=0
 	titleboard=pygame.image.load('logo.png')
 	titleboard=pygame.transform.scale(titleboard,(400,100))
 	titleboardrect=titleboard.get_rect(centerx=width/2,centery=75)
+	gameovershowing=datetime.utcnow().timestamp()
 	while menu:
-		if not running:
+		if gameover:
+			for e in pygame.event.get():
+				if e.type == pygame.MOUSEBUTTONDOWN:
+					if e.button==1:
+						pass
+				if e.type == pygame.QUIT:
+					menu=False
+			if datetime.utcnow().timestamp()-gameovershowing>2:
+				gameover=False
+				resumable=False
+				optionsrect=options.get_rect(centerx=width/2,centery=height/2+50)
+				newtextrect=newtext.get_rect(centerx=width/2,centery=height/2-50)
+			screen.fill((100,255,255))
+			screen.blit(gameovr,gameovrrect)
+			pygame.display.update()
+			clock.tick(60)
+		elif not running:
 			for e in pygame.event.get():
 				if e.type == pygame.MOUSEBUTTONDOWN:
 					if e.button==1:
@@ -321,10 +369,18 @@ def open_menu():
 							startbtn=tkinter.Button(windo,command=get_text_and_new,text="Start New")
 							startbtn.grid(row=2,column=1)
 							windo.mainloop()
+							gameovershowing=datetime.utcnow().timestamp()
+							if not gameover:
+								newtextrect=newtext.get_rect(centerx=width/2,centery=height/2+15)
+								optionsrect=options.get_rect(centerx=width/2,centery=height/2+85)
+								exitrect=exitm.get_rect(centerx=width/2,centery=height/2+160)
+								resumegamerect=resumegame.get_rect(centerx=width/2,centery=height/2-50)
+								resumable=True
 						elif resumegamerect.collidepoint(e.pos):
 							running=True
 							resume_old()
 							start_game()
+							gameovershowing=datetime.utcnow().timestamp()
 				if e.type == pygame.QUIT:
 					menu=False
 			screen.fill((100,255,255))
@@ -344,7 +400,8 @@ def open_menu():
 			screen.blit(newtext,newtextrect)
 			screen.blit(options,optionsrect)
 			screen.blit(exitm,exitrect)
-			screen.blit(resumegame,resumegamerect)
+			if resumable:
+				screen.blit(resumegame,resumegamerect)
 			pygame.display.update()
 			clock.tick(60)
 def bord(n):
@@ -517,9 +574,9 @@ rain=[]
 for x in range(100):
 	rain.append([random.randrange(0,cloudirect.width,1),random.randrange(0,200,1),random.randrange(10,30,1)/10,random.randrange(1,30,1)])
 def start_game():
-	global running,pressed,colliding,all_blocks,player,flip,jumping,imgcount,showhole,hole,temperzone,holepos,friend,sendimgpos,sendimgtype,cloudposition
+	global running,pressed,colliding,all_blocks,player,flip,jumping,imgcount,showhole,hole,temperzone,holepos,friend,sendimgpos,sendimgtype,cloudposition,shopposition,gameover
 	cloudirect.x=cloudposition[0]
-	cloudirect.x=cloudposition[1]
+	cloudirect.y=cloudposition[1]
 	while running and not temperzone:
 		for e in pygame.event.get():
 			if e.type == pygame.QUIT:
@@ -580,6 +637,15 @@ def start_game():
 			player.vy+=a
 		else:
 			player.vy+=2*a
+		if player.rect.y>5000 or player.blood<=0:
+			running=False
+			gameover=True
+		elif player.rect.x+player.rect.width>cloudirect.x and player.rect.x<cloudirect.x+cloudirect.width:
+			for r in rain:
+				if r[0]+cloudirect.x>player.rect.x and r[0]+cloudirect.x<player.rect.x+player.rect.width and r[1]+cloudirect.y+r[3]>player.rect.y and r[1]+cloudirect.y<player.rect.y+player.rect.height:
+					r[1]=random.randrange(0,cloudirect.height/2,1)
+					r[0]=random.randrange(0,cloudirect.width,1)
+					player.blood-=100
 		if pressed and not colliding:
 			if flip:
 				player.vx=-5
@@ -595,17 +661,13 @@ def start_game():
 			camera[1]=player.rect.y-height/4
 		collisions()
 		# cloudirect.x-=1
+		pygame.draw.rect(screen,(0,255,0),(shopposition[0]-camera[0],shopposition[1]-camera[1],500,300))
 		screen.blit(flowerimg,(flowerimgrect.x-camera[0],flowerimgrect.y-camera[1],flowerimgrect.width,flowerimgrect.height))
 		for r in rain:
 			r[1]+=r[2]
-			# for b in all_blocks:
-			# 	if isinstance(b,Wall):
-					# if b.rect.collidepoint([r[0],r[1]]):
-					# if r[0]>b.rect.x and r[0]<b.rect.x+b.rect.width and r[1]>b.rect.y and r[1]<b.rect.y+b.rect.height:
 			if r[1]>350:
 				r[1]=random.randrange(0,cloudirect.height/2,1)
 				r[0]=random.randrange(0,cloudirect.width,1)
-						# break
 			pygame.draw.rect(screen,(0,200,0),(r[0]+cloudirect.x-camera[0],r[1]+cloudirect.y+cloudirect.height/2-camera[1],r[2],r[3]))
 		screen.blit(cloudi,(cloudirect.x-camera[0],cloudirect.y-camera[1],cloudirect.width,cloudirect.height))
 		if showhole>0:
@@ -742,8 +804,16 @@ def start_game():
 					friend.x=holerect.x
 				else:
 					screen.blit(temp,(holerect.x+holerect.width/2-camera[0],friend.y-camera[1]),(holerect.x+holerect.width/2-friend.x,0,player.rect.width,player.rect.height))
+		screen.blit(assets["coins"][0],(20,20,50,50))
+		text=font.render('x '+str(player.coins),1,(0,0,0))
+		textpos=text.get_rect()
+		textpos.x=65
+		textpos.y=26
+		screen.blit(text,textpos)
 		screen.blit(energy,(energyrect.x,energyrect.y),(0,0,player.time_energy/(360*24*365),energyrect.height))
 		pygame.draw.rect(screen,(0,0,0),energyrect,1)
+		pygame.draw.rect(screen,(255,0,0),(energyrect.x,energyrect.y+50,energyrect.width*player.blood/1000,energyrect.height))
+		pygame.draw.rect(screen,(0,0,0),(energyrect.x,energyrect.y+50,energyrect.width,energyrect.height),1)
 		text=font.render('Date and Time : '+datetime.fromtimestamp(datetime.utcnow().timestamp()+player.time).strftime("%d/%m/%Y %H:%M:%S"),1,(0,0,0))
 		textpos=text.get_rect(centerx=screen.get_width()/2)
 		screen.blit(text,textpos)
@@ -751,7 +821,7 @@ def start_game():
 		clock.tick(60)
 	save_game()
 def save_game():
-	global player,all_blocks,socks,serversock
+	global player,all_blocks,socks,serversock,gameover
 	if not isinstance(socks[0],str):
 		try:
 			socks[0].send(bytes('\nexit\n','utf-8'))
@@ -765,16 +835,18 @@ def save_game():
 		serversock.close()
 		hadserver=True
 	f=open('player.data','w')
-	f.write(player.name)
-	if hadserver:
-		f.write(',server\n')
-	else:
-		f.write(','+serversock+'\n')
-	f.write(str(player.rect.x)+','+str(player.rect.y)+'\n')
-	f.write(str(round(player.time))+'\n')
-	f.write(str(round(player.time_energy))+'\n')
-	f.write(str(player.coins)+'\n')
-	f.write(friend.name)
+	if not gameover:
+		f.write(player.name)
+		if hadserver:
+			f.write(',server\n')
+		else:
+			f.write(','+serversock+'\n')
+		f.write(str(player.rect.x)+','+str(player.rect.y)+'\n')
+		f.write(str(round(player.time))+'\n')
+		f.write(str(player.blood)+'\n')
+		f.write(str(round(player.time_energy))+'\n')
+		f.write(str(player.coins)+'\n')
+		f.write(friend.name)
 	f.close()
 	othr=[]
 	for o in all_blocks:
@@ -783,7 +855,8 @@ def save_game():
 			othr.append(d)
 	data={'cloud':[cloudirect.x,cloudirect.y],"other":othr}
 	f=open('other.data','w')
-	f.write(json.dumps(data))
+	if not gameover:
+		f.write(json.dumps(data))
 	f.close()
 open_menu()
 pygame.quit()

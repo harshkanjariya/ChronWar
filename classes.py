@@ -10,6 +10,7 @@ class Player(pygame.sprite.Sprite):
 		self.rect=self.image.get_rect()
 		self.vx=0
 		self.vy=0
+		self.blood=1000
 		self.time=0
 		self.coins=0
 		self.time_energy=0
