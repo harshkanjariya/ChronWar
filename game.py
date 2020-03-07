@@ -409,6 +409,22 @@ def bord(n):
 		return 2
 	else:
 		return 0
+def goto_shop():
+	global player,inshop
+	inshop=True
+	shoptitle=font.render('Time Shop',1,(0,0,0))
+	shoptitlerect=shoptitle.get_rect(centerx=width/2,centery=50)
+	while inshop:
+		for e in pygame.event.get():
+			if e.type == pygame.KEYDOWN:
+				if e.key==pygame.K_ESCAPE:
+					inshop=False
+			if e.type == pygame.QUIT:
+				inshop=False
+		screen.fill((255,100,0))
+		screen.blit(shoptitle,shoptitlerect)
+		pygame.display.update()
+		clock.tick(60)
 def goto_temperzone():
 	global player,temperzone,mytime
 	player.vx=0
@@ -505,7 +521,7 @@ def goto_temperzone():
 					MM=datetime.fromtimestamp(time).minute
 					ss=datetime.fromtimestamp(time).second
 			if e.type == pygame.QUIT:
-				menu=False
+				temperzone=False
 		screen.fill((0,255,0))
 
 		if val>0:
@@ -612,6 +628,9 @@ def start_game():
 				elif e.key == pygame.K_ESCAPE:
 					running=False
 					break
+				elif e.key == pygame.K_RETURN:
+					if shopposition[0]+200<player.rect.x and shopposition[0]+300>player.rect.x+player.rect.width and shopposition[1]+200<player.rect.y and shopposition[1]+310>player.rect.y+player.rect.height:
+						goto_shop()
 				elif e.key == pygame.K_p:
 					if showhole==0:
 						if colliding:
@@ -662,6 +681,7 @@ def start_game():
 		collisions()
 		# cloudirect.x-=1
 		pygame.draw.rect(screen,(0,255,0),(shopposition[0]-camera[0],shopposition[1]-camera[1],500,300))
+		pygame.draw.rect(screen,(250,0,0),(shopposition[0]+200-camera[0],shopposition[1]+190-camera[1],100,110))
 		screen.blit(flowerimg,(flowerimgrect.x-camera[0],flowerimgrect.y-camera[1],flowerimgrect.width,flowerimgrect.height))
 		for r in rain:
 			r[1]+=r[2]
@@ -812,6 +832,7 @@ def start_game():
 		screen.blit(text,textpos)
 		screen.blit(energy,(energyrect.x,energyrect.y),(0,0,player.time_energy/(360*24*365),energyrect.height))
 		pygame.draw.rect(screen,(0,0,0),energyrect,1)
+		# pygame.draw.rect(screen,(0,0,255),(player.rect.x-camera[0],player.rect.y-camera[1],player.rect.width,player.rect.height))
 		pygame.draw.rect(screen,(255,0,0),(energyrect.x,energyrect.y+50,energyrect.width*player.blood/1000,energyrect.height))
 		pygame.draw.rect(screen,(0,0,0),(energyrect.x,energyrect.y+50,energyrect.width,energyrect.height),1)
 		text=font.render('Date and Time : '+datetime.fromtimestamp(datetime.utcnow().timestamp()+player.time).strftime("%d/%m/%Y %H:%M:%S"),1,(0,0,0))
