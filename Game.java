@@ -5,6 +5,7 @@ import javax.imageio.*;
 import javax.sound.sampled.*;
 import java.awt.*;
 import java.io.*;
+import java.awt.geom.*;
 import java.awt.event.*;
 import java.awt.image.*;
 class Game extends JFrame{
@@ -25,11 +26,11 @@ class Game extends JFrame{
 	    });
 	}
 }
-class GamePanel extends JPanel implements Runnable,KeyListener{
+class GamePanel extends JPanel implements Runnable,KeyListener,MouseListener{
 	Player player;
 	private Point camera;
 	int coinsize,bricksize,jumping,width,height,holepos;
-	int tzpos;
+	int tzpos,warnalpha,titlesize;
 	long inittime,temptime,showhole;
 	float friction,gravity;
 	ArrayList<Wall>walls;
@@ -38,13 +39,15 @@ class GamePanel extends JPanel implements Runnable,KeyListener{
 	BufferedImage []bricks=new BufferedImage[16];
 	BufferedImage []coins=new BufferedImage[5];
 	BufferedImage []diamonds=new BufferedImage[5];
-	BufferedImage hole,energyimg;
-	private boolean pressed,colliding,flip,running,temperzone,menu;
+	BufferedImage hole,energyimg,menuboard,titleboard;
+	boolean pressed,colliding,flip,running,temperzone,menu,resumable,gameon;
 	Rectangle holerect,energyrect;
+	Rectangle newmenu,optmenu,exitmenu,resumenu;
 	Font font=new Font("Arial",Font.BOLD,25);
 	Font bigfont=new Font("Arial",Font.BOLD,60);
 	SimpleDateFormat dateFormat=new SimpleDateFormat("dd/MM/yyyy HH:mm:ss",Locale.US);
 	public GamePanel(){
+		gameon=true;
 		coinsize=30;
 		bricksize=60;
 		jumping=0;
@@ -57,19 +60,24 @@ class GamePanel extends JPanel implements Runnable,KeyListener{
 		height=700;
 		friction=0.6f;
 		gravity=0.2f;
-		menu=false;
-		running=true;
+		menu=true;
+		running=false;
 		temperzone=false;
+		resumable=true;
 		tzpos=0;
+		titlesize=1;
 		camera=new Point(getWidth()/2,getHeight()/2);
 		holerect=new Rectangle(0,0,45,150);
 		energyrect=new Rectangle(width-350,30,200,30);
 		player=new Player("main",60,100);
 		walls=new ArrayList<>();
+		addMouseListener(this);
 		String line;
 		try{
 			hole=ImageIO.read(new File("hole.png"));
 			energyimg=ImageIO.read(new File("energy.jpg"));
+			menuboard=ImageIO.read(new File("menu/menuboard.png"));
+			titleboard=ImageIO.read(new File("logo.png"));
 			for (int i=0;i<16;i++){
 					bricks[i]=ImageIO.read(new File("bricks/brick"+i+".png"));
 			}
@@ -228,11 +236,38 @@ class GamePanel extends JPanel implements Runnable,KeyListener{
 			g2d.drawString(""+cal.get(Calendar.MINUTE),width/2+220,height-230);
 			g2d.drawString(""+cal.get(Calendar.SECOND),width/2+320,height-230);
 			g2d.drawString("Jump",width/2-30,height-135);
+			if (warnalpha>0){
+				g2d.setFont(font);
+				g2d.setColor(new Color(255,0,0,warnalpha));
+				g2d.drawString("Not Enough Time Energy!",width/2-125,100);
+				warnalpha-=2;
+			}
+		}else if(menu){
+			g2d.setColor(new Color(100,255,255));
+			g2d.fillRect(0,0,getWidth(),getHeight());
+			g2d.setColor(Color.BLACK);
+			g2d.setFont(new Font("Arial",Font.BOLD,40));
+			if(titlesize<100)titlesize+=2;
+			g2d.drawImage(titleboard,width/2-titlesize*2,50,titlesize*4,titlesize,null);
+			g2d.drawImage(menuboard,width/2-150,height/2-150,300,400,null);
+			Rectangle2D rect = g2d.getFontMetrics().getStringBounds("New Game",g2d);
+			newmenu=new Rectangle(width/2-(int)rect.getWidth()/2,height/2-(resumable?40:90),(int)rect.getWidth(),(int)rect.getHeight());
+			g2d.drawString("New Game",newmenu.x,newmenu.y+35);
+			rect = g2d.getFontMetrics().getStringBounds("Options",g2d);
+			optmenu=new Rectangle(width/2-(int)rect.getWidth()/2,height/2+(resumable?40:20),(int)rect.getWidth(),(int)rect.getHeight());
+			g2d.drawString("Options",optmenu.x,optmenu.y+35);
+			rect = g2d.getFontMetrics().getStringBounds("Exit",g2d);
+			exitmenu=new Rectangle(width/2-(int)rect.getWidth()/2,height/2+(resumable?125:115),(int)rect.getWidth(),(int)rect.getHeight());
+			g2d.drawString("Exit",exitmenu.x,exitmenu.y+35);
+			if(resumable){
+				rect = g2d.getFontMetrics().getStringBounds("Resume",g2d);
+				resumenu=new Rectangle(width/2-(int)rect.getWidth()/2,height/2-115,(int)rect.getWidth(),(int)rect.getHeight());
+				g2d.drawString("Resume",resumenu.x,resumenu.y+35);
+			}
 		}
 	}
 	public void run(){
-		long now;
-		while(true){
+		while(gameon){
 			if(running){
 				if(player.vy<0)
 					player.vy+=gravity;
@@ -258,12 +293,11 @@ class GamePanel extends JPanel implements Runnable,KeyListener{
 				gain();
 				for(var a:assets)
 					a.update();
-			}else if(temperzone){
-
 			}
 			repaint();
 			try{Thread.sleep(10);}catch(Exception e){e.printStackTrace();}
 		}
+		System.exit(0);
 	}
 	public void gain(){
 		long dt=new Date().getTime()+player.time;
@@ -327,9 +361,33 @@ class GamePanel extends JPanel implements Runnable,KeyListener{
 				}
 		}
 	}
+	public void mouseExited(MouseEvent e){}
+	public void mouseEntered(MouseEvent e){}
+	public void mouseReleased(MouseEvent e){}
+	public void mousePressed(MouseEvent e){}
+	public void mouseClicked(MouseEvent e){
+		int x=e.getX();
+		int y=e.getY();
+		if(menu){
+			if(optmenu.contains(x,y)){
+			}else if(resumenu.contains(x,y)){
+				running=true;
+				menu=false;
+			}else if(newmenu.contains(x,y)){
+				running=true;
+				menu=false;
+			}else if(exitmenu.contains(x,y)){
+				gameon=false;
+			}
+		}
+	}
 	public void keyPressed(KeyEvent e){
 		int c=e.getKeyCode();
-		if (running){
+		if (menu){
+			if(c==KeyEvent.VK_T){
+				resumable=!resumable;
+			}
+		}else if(running){
 			if(c==KeyEvent.VK_UP){
 				if(colliding){
 					jumping=0;
@@ -380,10 +438,14 @@ class GamePanel extends JPanel implements Runnable,KeyListener{
 				player.time-=new Date().getTime()-inittime;
 			}else if(c==KeyEvent.VK_ENTER){
 				if(tzpos==6){
-					player.time_energy-=Math.abs(temptime-inittime-player.time);
-					temperzone=false;
-					running=true;
-					player.time=temptime-inittime;
+					if(Math.abs(temptime-inittime-player.time)>player.time_energy)
+						warnalpha=255;
+					else{
+						player.time_energy-=Math.abs(temptime-inittime-player.time);
+						temperzone=false;
+						running=true;
+						player.time=temptime-inittime;
+					}
 				}
 			}else if(c==KeyEvent.VK_UP){
 				switch(tzpos){
@@ -687,6 +749,7 @@ class GamePanel extends JPanel implements Runnable,KeyListener{
 						running=false;
 						temperzone=true;
 						pressed=false;
+						vx=0;
 						inittime=new Date().getTime();
 						temptime=inittime+time;
 					}
@@ -705,6 +768,7 @@ class GamePanel extends JPanel implements Runnable,KeyListener{
 						running=false;
 						temperzone=true;
 						pressed=false;
+						vx=0;
 						inittime=new Date().getTime();
 						temptime=inittime+time;
 					}
