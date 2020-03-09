@@ -1,21 +1,40 @@
+import org.json.*;
+
+import java.io.*;
 import java.util.*;
 import java.text.*;
-import javax.swing.*;
-import javax.imageio.*;
-import javax.sound.sampled.*;
 import java.awt.*;
-import java.io.*;
 import java.awt.geom.*;
 import java.awt.event.*;
 import java.awt.image.*;
+import java.nio.file.*;
+import javax.swing.*;
+import javax.imageio.*;
+import javax.sound.sampled.*;
 class Game extends JFrame{
 	public Game(){
 		setSize(1200,700);
 		setVisible(true);
-		setDefaultCloseOperation(EXIT_ON_CLOSE);
+		setDefaultCloseOperation(DO_NOTHING_ON_CLOSE);
 		GamePanel panel=new GamePanel();
 		add(panel);
 		addKeyListener(panel);
+		addWindowListener(new WindowAdapter(){
+			public void windowClosing(WindowEvent event){
+				if(panel.running){
+					panel.running=false;
+					panel.menu=true;
+					panel.resumable=true;
+					panel.saveGame();
+				}else if(panel.temperzone){
+					panel.temperzone=false;
+					panel.running=true;
+					panel.player.time-=new Date().getTime()-panel.inittime;
+				}else{
+					System.exit(0);
+				}
+			}
+		});
 	}
 	public static void main(String []args){
 	    System.setProperty("sun.java2d.opengl", "true");
@@ -31,7 +50,7 @@ class GamePanel extends JPanel implements Runnable,KeyListener,MouseListener{
 	private Point camera;
 	int coinsize,bricksize,jumping,width,height,holepos;
 	int tzpos,warnalpha,titlesize;
-	long inittime,temptime,showhole;
+	long inittime,temptime,showhole,gameovertime;
 	float friction,gravity;
 	ArrayList<Wall>walls;
 	ArrayList<Other>assets=new ArrayList<>();
@@ -40,22 +59,101 @@ class GamePanel extends JPanel implements Runnable,KeyListener,MouseListener{
 	BufferedImage []coins=new BufferedImage[5];
 	BufferedImage []diamonds=new BufferedImage[5];
 	BufferedImage hole,energyimg,menuboard,titleboard;
-	boolean pressed,colliding,flip,running,temperzone,menu,resumable,gameon;
+	boolean pressed,colliding,flip,running,temperzone,menu,resumable,gameon,gameover;
 	Rectangle holerect,energyrect;
 	Rectangle newmenu,optmenu,exitmenu,resumenu;
 	Font font=new Font("Arial",Font.BOLD,25);
 	Font bigfont=new Font("Arial",Font.BOLD,60);
 	SimpleDateFormat dateFormat=new SimpleDateFormat("dd/MM/yyyy HH:mm:ss",Locale.US);
-	public GamePanel(){
-		gameon=true;
-		coinsize=30;
-		bricksize=60;
-		jumping=0;
+	public void loadNewGame(){
+		player=new Player("main",60,100);
 		colliding=false;
 		pressed=false;
 		flip=false;
 		showhole=0;
 		jumping=-1;
+		running=true;
+		menu=false;
+		temperzone=false;
+		tzpos=0;
+		resumable=true;
+		assets.clear();
+		try{
+			BufferedReader reader=new BufferedReader(new InputStreamReader(new FileInputStream("level1.data")));
+			String objtype="";
+			int indx=0;
+			String line;
+			while((line=reader.readLine())!=null){
+				if(line.indexOf(",")<0){
+					objtype=line;
+					indx=0;
+				}else{
+					long[]ar=Arrays.asList(line.split(",")).stream().mapToLong(Long::parseLong).toArray();
+					if(objtype.equals("coins") || objtype.equals("diamonds")){
+						indx++;
+						Other obj=new Other(objtype+":"+indx,(int)ar[1],(int)ar[2]);
+						obj.starttime=ar[0];
+						if(ar.length>3){
+							obj.endtime=ar[3];
+						}else{
+							obj.endtime=Long.MAX_VALUE;
+						}
+						assets.add(obj);
+					}
+				}
+			}
+			reader.close();
+		}catch(Exception e){}
+	}
+	public void resumeGame(){
+		player=new Player("main",60,100);
+		colliding=false;
+		pressed=false;
+		flip=false;
+		showhole=0;
+		jumping=-1;
+		running=true;
+		menu=false;
+		temperzone=false;
+		tzpos=0;
+		resumable=true;
+		assets.clear();
+		try{
+			String jsondata=Files.readString(Path.of("other.data"));
+			JSONObject json=new JSONObject(jsondata);
+			JSONArray jsar=json.getJSONArray("other");
+			for(int i=0;i<jsar.length();i++){
+				JSONObject obj=jsar.getJSONObject(i);
+				String nm=obj.getString("n");
+				int x=obj.getInt("x");
+				int y=obj.getInt("y");
+				long s=obj.getLong("s")*1000;
+				long e=obj.getLong("e")*1000;
+				Other o=new Other(nm,x,y);
+				o.starttime=s;
+				o.endtime=e;
+				assets.add(o);
+			}
+			String playerdata=Files.readString(Path.of("player.data"));
+			String []pldt=playerdata.split("\\n");
+			String []ar=pldt[0].split(",");
+			player.name=ar[0];
+			String contype=ar[1];
+			ar=pldt[1].split(",");
+			player.x=Integer.parseInt(ar[0]);
+			player.y=Integer.parseInt(ar[1]);
+			player.time=Long.parseLong(pldt[2]);
+			player.blood=Integer.parseInt(pldt[3]);
+			player.time_energy=Long.parseLong(pldt[4])*1000;
+			player.coins=Integer.parseInt(pldt[5]);
+		}catch(Exception e){
+			e.printStackTrace();
+		}
+	}
+	public GamePanel(){
+		gameon=true;
+		coinsize=30;
+		bricksize=60;
 		width=1200;
 		height=700;
 		friction=0.6f;
@@ -63,13 +161,16 @@ class GamePanel extends JPanel implements Runnable,KeyListener,MouseListener{
 		menu=true;
 		running=false;
 		temperzone=false;
-		resumable=true;
-		tzpos=0;
+		gameover=false;
 		titlesize=1;
+		File file=new File("player0.data");
+		if(file.exists())
+			resumable=file.length()>0;
+		else
+			resumable=false;
 		camera=new Point(getWidth()/2,getHeight()/2);
 		holerect=new Rectangle(0,0,45,150);
 		energyrect=new Rectangle(width-350,30,200,30);
-		player=new Player("main",60,100);
 		walls=new ArrayList<>();
 		addMouseListener(this);
 		String line;
@@ -93,28 +194,6 @@ class GamePanel extends JPanel implements Runnable,KeyListener,MouseListener{
 				earth.add(new Rectangle(ar[0],ar[1],ar[2],ar[3]));
 			}
 			reader.close();
-			reader=new BufferedReader(new InputStreamReader(new FileInputStream("level1.data")));
-			String objtype="";
-			int indx=0;
-			while((line=reader.readLine())!=null){
-				if(line.indexOf(",")<0){
-					objtype=line;
-					indx=0;
-				}else{
-					long[]ar=Arrays.asList(line.split(",")).stream().mapToLong(Long::parseLong).toArray();
-					if(objtype.equals("coins") || objtype.equals("diamonds")){
-						indx++;
-						Other obj=new Other(objtype+":"+indx,(int)ar[1],(int)ar[2]);
-						obj.starttime=ar[0];
-						if(ar.length>3){
-							obj.endtime=ar[3];
-						}else{
-							obj.endtime=Long.MAX_VALUE;
-						}
-						assets.add(obj);
-					}
-				}
-			}
 		}catch(Exception exc){exc.printStackTrace();}
 		for(var l:earth)
 			walls.add(new Wall(l.x,l.y,l.width,l.height));
@@ -264,6 +343,13 @@ class GamePanel extends JPanel implements Runnable,KeyListener,MouseListener{
 				resumenu=new Rectangle(width/2-(int)rect.getWidth()/2,height/2-115,(int)rect.getWidth(),(int)rect.getHeight());
 				g2d.drawString("Resume",resumenu.x,resumenu.y+35);
 			}
+		}else if(gameover){
+			g2d.setColor(new Color(100,255,255));
+			g2d.fillRect(0,0,getWidth(),getHeight());
+			g2d.setColor(Color.GREEN);
+			g2d.setFont(new Font("Arial",Font.BOLD,40));
+			Rectangle2D rect = g2d.getFontMetrics().getStringBounds("Game Over",g2d);
+			g2d.drawString("Game Over",width/2-(int)rect.getWidth()/2,height/2-(int)rect.getHeight()/2);
 		}
 	}
 	public void run(){
@@ -282,6 +368,15 @@ class GamePanel extends JPanel implements Runnable,KeyListener,MouseListener{
 				}
 				collide();
 				player.update();
+				if(player.y>5000 || player.blood<=0){
+					running=false;
+					gameover=true;
+					try{
+						FileOutputStream out=new FileOutputStream("player0.data");
+						out.close();
+					}catch(Exception e){e.printStackTrace();}
+					gameovertime=new Date().getTime();
+				}
 				if(player.x-camera.x<width/4)
 					camera.x=player.x-width/4;
 				else if(player.x-camera.x>width/2)
@@ -293,6 +388,12 @@ class GamePanel extends JPanel implements Runnable,KeyListener,MouseListener{
 				gain();
 				for(var a:assets)
 					a.update();
+			}else if(gameover){
+				if(new Date().getTime()-gameovertime>5000){
+					gameover=false;
+					resumable=false;
+					menu=true;
+				}
 			}
 			repaint();
 			try{Thread.sleep(10);}catch(Exception e){e.printStackTrace();}
@@ -370,12 +471,10 @@ class GamePanel extends JPanel implements Runnable,KeyListener,MouseListener{
 		int y=e.getY();
 		if(menu){
 			if(optmenu.contains(x,y)){
-			}else if(resumenu.contains(x,y)){
-				running=true;
-				menu=false;
+			}else if(resumable && resumenu.contains(x,y)){
+				resumeGame();
 			}else if(newmenu.contains(x,y)){
-				running=true;
-				menu=false;
+				loadNewGame();
 			}else if(exitmenu.contains(x,y)){
 				gameon=false;
 			}
@@ -393,6 +492,11 @@ class GamePanel extends JPanel implements Runnable,KeyListener,MouseListener{
 					jumping=0;
 					player.vy=-7;
 				}
+			}else if(c==KeyEvent.VK_ESCAPE){
+				running=false;
+				menu=true;
+				resumable=true;
+				saveGame();
 			}else if(c==KeyEvent.VK_DOWN){
 				if(colliding){
 					jumping=0;
@@ -510,6 +614,37 @@ class GamePanel extends JPanel implements Runnable,KeyListener,MouseListener{
 		}
 	}
 	public void keyTyped(KeyEvent e){}
+	public void saveGame(){
+		try{
+			File file=new File("player.data");
+			PrintWriter writer=new PrintWriter(file);
+			writer.println(player.name+",server");
+			writer.println(player.x+","+player.y);
+			writer.println(player.time);
+			writer.println(player.blood);
+			writer.println(player.time_energy/1000);
+			writer.println(player.coins);
+			// writer.println(friend.name);
+			writer.close();
+
+			JSONArray arr=new JSONArray();
+			for(var a:assets){
+				JSONObject obj=new JSONObject();
+				obj.put("n",a.name);
+				obj.put("x",a.x);
+				obj.put("y",a.y);
+				obj.put("s",a.starttime/1000);
+				obj.put("e",a.endtime/1000);
+				arr.put(obj);
+			}
+			JSONObject data=new JSONObject();
+			data.put("other",arr);
+			// System.out.println(data.toString());
+			FileWriter wrtr=new FileWriter("other.data");
+			wrtr.write(data.toString(1));
+			wrtr.close();
+		}catch(Exception e){}
+	}
 	class Wall{
 		int x,y,col,row,size;
 		public Wall(int x,int y,int col,int row){

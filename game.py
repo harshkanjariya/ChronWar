@@ -113,7 +113,7 @@ def newgame_load():
 				if len(l)>3:
 					obj.endtime=l[3]
 				else:
-					obj.endtime=9999999999999999999999
+					obj.endtime=9223372036854775
 				all_blocks.add(obj)
 		except ValueError:
 			objtype=l
@@ -872,12 +872,12 @@ def save_game():
 	othr=[]
 	for o in all_blocks:
 		if isinstance(o,Other):
-			d={'n':o.name,'x':o.rect.x,'y':o.rect.y,'s':o.starttime,'e':o.endtime}
+			d={'n':o.name,'x':o.rect.x,'y':o.rect.y,'s':o.starttime,'e':round(o.endtime)}
 			othr.append(d)
-	data={'cloud':[cloudirect.x,cloudirect.y],"other":othr}
+	data={"other":othr}
 	f=open('other.data','w')
 	if not gameover:
-		f.write(json.dumps(data))
+		f.write(json.dumps(data,indent=1))
 	f.close()
 open_menu()
 pygame.quit()
