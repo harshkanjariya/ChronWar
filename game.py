@@ -243,14 +243,15 @@ def reading(sock):
 			elif '_' in d:
 				data=d.split('_')
 				if data[0]=='hole':
-					holerect.x=int(data[1])
-					holerect.y=int(data[2])
-					if flip:
-						friend.holepos=-1
-					else:
-						friend.holepos=1
-					holepos=1
-					showhole=datetime.utcnow().timestamp()
+					if not friend.temper and int(friend.time)>int(player.time-5) and int(friend.time)<int(player.time+5):
+						holerect.x=int(data[1])
+						holerect.y=int(data[2])
+						if flip:
+							friend.holepos=-1
+						else:
+							friend.holepos=1
+						holepos=1
+						showhole=datetime.utcnow().timestamp()
 			elif ':' in d:
 				data=d.split(';')
 				for b in all_blocks:
