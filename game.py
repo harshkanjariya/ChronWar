@@ -415,11 +415,35 @@ def goto_shop():
 	inshop=True
 	shoptitle=font.render('Time Shop',1,(0,0,0))
 	shoptitlerect=shoptitle.get_rect(centerx=width/2,centery=50)
+	text=font.render('x 5',1,(0,0,0))
+	textpos=text.get_rect()
+	textpos.x=width*3/14
+	textpos.y=height*2/5+20
+	shopfocus=0
+	enough=font.render('Not Enough Coins!',1,(0,255,0))
+	enoughpos=enough.get_rect(centerx=width/2,centery=80)
+	surf=pygame.Surface((enoughpos.width,enoughpos.height))
+	surf.fill((255,100,0))
+	surf.blit(enough,(0,0,enoughpos.width,enoughpos.height))
+	val=0
 	while inshop:
 		for e in pygame.event.get():
 			if e.type == pygame.KEYDOWN:
 				if e.key==pygame.K_ESCAPE:
 					inshop=False
+				elif e.key==pygame.K_LEFT:
+					shopfocus=(shopfocus+5)%6
+				elif e.key==pygame.K_RIGHT:
+					shopfocus=(shopfocus+1)%6
+				elif e.key==pygame.K_UP or e.key==pygame.K_DOWN:
+					shopfocus=(shopfocus+3)%6
+				elif e.key==pygame.K_RETURN:
+					if shopfocus==0:
+						if player.coins<5:
+							val=255
+						else:
+							player.coins-=5
+							player.seed+=1
 			if e.type == pygame.QUIT:
 				inshop=False
 		screen.fill((255,100,0))
@@ -429,7 +453,33 @@ def goto_shop():
 		pygame.draw.rect(screen,(0,255,0),(width/7,height*3/5,width/7,height/5))
 		pygame.draw.rect(screen,(0,255,0),(width*3/7,height*3/5,width/7,height/5))
 		pygame.draw.rect(screen,(0,255,0),(width*5/7,height*3/5,width/7,height/5))
+		if shopfocus==0:
+			pygame.draw.rect(screen,(255,255,255),(width/7-5,height/5-5,width/7+10,height/5+10),5)
+		elif shopfocus==1:
+			pygame.draw.rect(screen,(255,255,255),(width*3/7-5,height/5-5,width/7+10,height/5+10),5)
+		elif shopfocus==2:
+			pygame.draw.rect(screen,(255,255,255),(width*5/7-5,height/5-5,width/7+10,height/5+10),5)
+		elif shopfocus==3:
+			pygame.draw.rect(screen,(255,255,255),(width/7-5,height*3/5-5,width/7+10,height/5+10),5)
+		elif shopfocus==4:
+			pygame.draw.rect(screen,(255,255,255),(width*3/7-5,height*3/5-5,width/7+10,height/5+10),5)
+		elif shopfocus==5:
+			pygame.draw.rect(screen,(255,255,255),(width*5/7-5,height*3/5-5,width/7+10,height/5+10),5)
 		screen.blit(shoptitle,shoptitlerect)
+		screen.blit(seed,seedrect)
+		screen.blit(assets["coins"][0],(width*3/14-50,height*2/5+10,50,50))
+		screen.blit(text,textpos)
+
+		screen.blit(assets["coins"][0],(20,20,50,50))
+		coincount=font.render('x '+str(player.coins),1,(0,0,0))
+		coincountpos=coincount.get_rect()
+		coincountpos.x=65
+		coincountpos.y=26
+		screen.blit(coincount,coincountpos)
+		if val>0:
+			surf.set_alpha(val)
+			screen.blit(surf,enoughpos)
+			val-=2
 		pygame.display.update()
 		clock.tick(60)
 def goto_temperzone():
@@ -471,6 +521,11 @@ def goto_temperzone():
 	ss=datetime.fromtimestamp(time).second
 	pos=6
 	val=0
+	enough=font.render('Not Enough Time Energy!',1,(255,0,0))
+	enoughpos=enough.get_rect(centerx=width/2,centery=100)
+	surf=pygame.Surface((enoughpos.width,enoughpos.height))
+	surf.fill((0,255,0))
+	surf.blit(enough,(0,0,enoughpos.width,enoughpos.height))
 	while temperzone:
 		for e in pygame.event.get():
 			if e.type == pygame.KEYDOWN:
@@ -532,13 +587,8 @@ def goto_temperzone():
 		screen.fill((0,255,0))
 
 		if val>0:
-			text=font.render('Not Enough Time Energy!',1,(255,0,0))
-			textpos=text.get_rect(centerx=width/2,centery=100)
-			surf=pygame.Surface((textpos.width,textpos.height))
-			surf.fill((0,255,0))
-			surf.blit(text,(0,0,textpos.width,textpos.height))
 			surf.set_alpha(val)
-			screen.blit(surf,textpos)
+			screen.blit(surf,enoughpos)
 			val-=2
 
 		text=font.render(str(timedelta(seconds=player.time_energy)),1,(0,0,0))

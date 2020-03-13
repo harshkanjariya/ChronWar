@@ -2,6 +2,8 @@ import pygame,os
 
 coinsize=30
 bricksize=60
+width=1200
+height=300
 
 idle=pygame.image.load('character'+os.path.sep+'idle.png')
 # idle=pygame.transform.scale(idle,(player.rect.width,player.rect.height))
@@ -33,6 +35,10 @@ for i in range(49):
 flowerimg=pygame.image.load('flower.png')
 flowerimg=pygame.transform.scale(flowerimg,(30,30))
 flowerimgrect=flowerimg.get_rect()
+
+seed=pygame.image.load('seed.png')
+seed=pygame.transform.scale(seed,(height//5,height//5))
+seedrect=seed.get_rect(centerx=width*3//14,centery=height*3//5)
 
 showhole=0
 holepos=0

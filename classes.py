@@ -13,6 +13,7 @@ class Player(pygame.sprite.Sprite):
 		self.blood=1000
 		self.time=0
 		self.coins=0
+		self.seed=0
 		self.time_energy=0
 	def show(self):
 		global screen,camera
