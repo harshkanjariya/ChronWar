@@ -25,8 +25,8 @@ for i in range(5):
 	assets["coins"].append(im)
 
 assets["diamonds"]=[]
-for i in range(5):
-	im=pygame.image.load('diamonds'+os.path.sep+str(i)+'.png')
+for i in range(49):
+	im=pygame.image.load('diamonds'+os.path.sep+str(i+1)+'.png')
 	im=pygame.transform.scale(im,(coinsize*2,coinsize*2))
 	assets["diamonds"].append(im)
 

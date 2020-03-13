@@ -423,6 +423,12 @@ def goto_shop():
 			if e.type == pygame.QUIT:
 				inshop=False
 		screen.fill((255,100,0))
+		pygame.draw.rect(screen,(0,255,0),(width/7,height/5,width/7,height/5))
+		pygame.draw.rect(screen,(0,255,0),(width*3/7,height/5,width/7,height/5))
+		pygame.draw.rect(screen,(0,255,0),(width*5/7,height/5,width/7,height/5))
+		pygame.draw.rect(screen,(0,255,0),(width/7,height*3/5,width/7,height/5))
+		pygame.draw.rect(screen,(0,255,0),(width*3/7,height*3/5,width/7,height/5))
+		pygame.draw.rect(screen,(0,255,0),(width*5/7,height*3/5,width/7,height/5))
 		screen.blit(shoptitle,shoptitlerect)
 		pygame.display.update()
 		clock.tick(60)

@@ -36,10 +36,16 @@ class Other(pygame.sprite.Sprite):
 		self.endtime=0
 		self.imgs=imgs
 	def update(self):
-		self.count=(self.count+2)%60
+		if "diamond" in self.name:
+			self.count=(self.count+1)%120
+		else:
+			self.count=(self.count+2)%60
 	def show(self,screen,camera,now):
 		if self.starttime<now and self.endtime>now:
-			screen.blit(self.imgs[int(self.count*len(self.imgs)/60)],(self.rect.x-camera[0],self.rect.y-camera[1],50,50))
+			if "diamond" in self.name:
+				screen.blit(self.imgs[int(self.count*len(self.imgs)/120)],(self.rect.x-camera[0],self.rect.y-camera[1],50,50))
+			else:
+				screen.blit(self.imgs[int(self.count*len(self.imgs)/60)],(self.rect.x-camera[0],self.rect.y-camera[1],50,50))
 class Wall(pygame.sprite.Sprite):
 	def __init__(self,color,blocks,bricksize):
 		super().__init__()
