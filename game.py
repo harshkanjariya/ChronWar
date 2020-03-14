@@ -46,7 +46,7 @@ class Friend():
 		self.flip=False
 friend=Friend()
 def resume_old():
-	global cloudposition,shopposition,timenow
+	global cloudposition,shopposition,timenow,showtree,treerect,treetime
 	leveldata=open('level1.data','r').read().split()
 	objtype=""
 	idx=0
@@ -68,6 +68,11 @@ def resume_old():
 	for x in all_blocks:
 		if isinstance(x,Other):
 			all_blocks.remove(x)
+	if otherdata['tree']:
+		showtree=True
+		treerect.x=otherdata['tree']['x']
+		treerect.y=otherdata['tree']['y']
+		treetime=otherdata['tree']['time']
 	for o in otherdata['other']:
 		obj=Other(o['n'],(0,0,0),o['x'],o['y'],coinsize,assets[o['n'].split(":")[0]])
 		obj.starttime=o['s']
@@ -647,7 +652,9 @@ rain=[]
 for x in range(100):
 	rain.append([random.randrange(0,cloudirect.width,1),random.randrange(0,200,1),random.randrange(10,30,1)/10,random.randrange(1,30,1)])
 def start_game():
-	global running,pressed,colliding,all_blocks,player,flip,jumping,imgcount,showhole,hole,temperzone,holepos,friend,sendimgpos,sendimgtype,cloudposition,shopposition,gameover
+	global running,pressed,colliding,showtree,flip,jumping,imgcount,showhole,temperzone,sendimgpos,sendimgtype,shopposition,gameover
+	global tree,treerect,treetime,hole,holepos,cloudposition,rain
+	global all_blocks,player,friend
 	cloudirect.x=cloudposition[0]
 	cloudirect.y=cloudposition[1]
 	while running and not temperzone:
@@ -688,6 +695,15 @@ def start_game():
 				elif e.key == pygame.K_RETURN:
 					if shopposition[0]+200<player.rect.x and shopposition[0]+300>player.rect.x+player.rect.width and shopposition[1]+200<player.rect.y and shopposition[1]+310>player.rect.y+player.rect.height:
 						goto_shop()
+				elif e.key==pygame.K_t:
+					if player.seed>0:
+						showtree=True
+						treetime=datetime.utcnow().timestamp()+player.time
+						treerect.y=player.rect.y+player.rect.height+5
+						if flip:
+							treerect.x=player.rect.x
+						else:
+							treerect.x=player.rect.x+player.rect.width
 				elif e.key == pygame.K_p:
 					if showhole==0:
 						if colliding:
@@ -747,6 +763,25 @@ def start_game():
 				r[0]=random.randrange(0,cloudirect.width,1)
 			pygame.draw.rect(screen,(0,200,0),(r[0]+cloudirect.x-camera[0],r[1]+cloudirect.y+cloudirect.height/2-camera[1],r[2],r[3]))
 		screen.blit(cloudi,(cloudirect.x-camera[0],cloudirect.y-camera[1],cloudirect.width,cloudirect.height))
+		nowtime=datetime.utcnow().timestamp()+player.time
+		if showtree and treetime<nowtime:
+			if (nowtime-treetime)/(60*60*24)>300:
+				tree=pygame.transform.scale(seed,(100,100))
+				if cloudirect.x-cloudirect.width<treerect.x:
+					if len(rain)>0:
+						rain=[]
+			else:
+				temp=int((nowtime-treetime)/(60*60*24*3))
+				if cloudirect.x-cloudirect.width<treerect.x:
+					if len(rain)>100-temp:
+						rain.pop()
+					elif len(rain)<100-temp:
+						rain.append([random.randrange(0,cloudirect.width,1),random.randrange(0,200,1),random.randrange(10,30,1)/10,random.randrange(1,30,1)])
+				tree=pygame.transform.scale(seed,(temp,temp))
+			temprect=tree.get_rect()
+			treerect.width=temprect.width
+			treerect.height=temprect.height
+			screen.blit(tree,(treerect.x-camera[0]-treerect.width/2,treerect.y-camera[1]-treerect.height,treerect.width,treerect.height))
 		if showhole>0:
 			now=datetime.utcnow().timestamp()
 			if now-showhole>5:
@@ -899,7 +934,7 @@ def start_game():
 		clock.tick(60)
 	save_game()
 def save_game():
-	global player,all_blocks,socks,serversock,gameover
+	global player,all_blocks,socks,serversock,gameover,tree,treerect,treetime
 	if not isinstance(socks[0],str):
 		try:
 			socks[0].send(bytes('\nexit\n','utf-8'))
@@ -932,6 +967,8 @@ def save_game():
 			d={'n':o.name,'x':o.rect.x,'y':o.rect.y,'s':o.starttime,'e':round(o.endtime)}
 			othr.append(d)
 	data={"other":othr}
+	if showtree:
+		data["tree"]={"x":treerect.x,"y":treerect.y,"time":treetime}
 	f=open('other.data','w')
 	if not gameover:
 		f.write(json.dumps(data,indent=1))

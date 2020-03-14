@@ -46,6 +46,11 @@ hole=pygame.image.load('hole.png')
 hole=pygame.transform.scale(hole,(45,150))
 holerect=hole.get_rect()
 
+showtree=False
+treetime=0
+tree=pygame.transform.scale(seed,(20,20))
+treerect=tree.get_rect()
+
 energy=pygame.image.load('energy.jpg')
 energy=pygame.transform.scale(energy,(200,30))
 energyrect=energy.get_rect()
