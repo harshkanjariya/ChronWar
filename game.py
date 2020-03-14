@@ -58,8 +58,8 @@ def resume_old():
 				cloudposition=l
 			if objtype=="shop":
 				shopposition=l
-			elif objtype=="coins" or objtype=="diamonds":
-				pass
+			# elif objtype=="coins" or objtype=="diamonds":
+			# 	pass
 		except ValueError:
 			objtype=l
 			idx=0
@@ -257,6 +257,11 @@ def reading(sock):
 							friend.holepos=1
 						holepos=1
 						showhole=datetime.utcnow().timestamp()
+				elif data[0]=='tree':
+					showtree=True
+					treerect.x=int(data[1])
+					treerect.y=int(data[2])
+					treetime=int(data[3])
 			elif ':' in d:
 				data=d.split(';')
 				for b in all_blocks:
@@ -341,9 +346,9 @@ def open_menu():
 	while menu:
 		if gameover:
 			for e in pygame.event.get():
-				if e.type == pygame.MOUSEBUTTONDOWN:
-					if e.button==1:
-						pass
+				# if e.type == pygame.MOUSEBUTTONDOWN:
+				# 	if e.button==1:
+				# 		pass
 				if e.type == pygame.QUIT:
 					menu=False
 			if datetime.utcnow().timestamp()-gameovershowing>2:
@@ -698,12 +703,13 @@ def start_game():
 				elif e.key==pygame.K_t:
 					if player.seed>0:
 						showtree=True
-						treetime=datetime.utcnow().timestamp()+player.time
+						treetime=int(datetime.utcnow().timestamp()+player.time)
 						treerect.y=player.rect.y+player.rect.height+5
 						if flip:
 							treerect.x=player.rect.x
 						else:
 							treerect.x=player.rect.x+player.rect.width
+						socks[0].send(bytes('<tree_'+str(treerect.x)+'_'+str(treerect.y)+'_'+str(treetime)'>','utf-8'))
 				elif e.key == pygame.K_p:
 					if showhole==0:
 						if colliding:
