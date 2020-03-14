@@ -221,6 +221,7 @@ trd=['']
 mytime=0
 def reading(sock):
 	global running,screen,player,camera,friend,all_blocks,mytime,holerect,holepos,showhole
+	global treerect,showtree,treetime
 	while running:
 		d=str(sock.recv(1024),'utf-8')
 		if '\n' in d and 'exit' in d.split():
@@ -246,6 +247,7 @@ def reading(sock):
 				else:
 					print('recieved:',d)
 			elif '_' in d:
+				print(d)
 				data=d.split('_')
 				if data[0]=='hole':
 					if not friend.temper and int(friend.time)>int(player.time-5) and int(friend.time)<int(player.time+5):
@@ -653,13 +655,14 @@ def goto_temperzone():
 		screen.blit(idle,(100,100,player.rect.width,player.rect.height))
 		pygame.display.update()
 		clock.tick(60)
+timelapse=0
 rain=[]
 for x in range(100):
 	rain.append([random.randrange(0,cloudirect.width,1),random.randrange(0,200,1),random.randrange(10,30,1)/10,random.randrange(1,30,1)])
 def start_game():
 	global running,pressed,colliding,showtree,flip,jumping,imgcount,showhole,temperzone,sendimgpos,sendimgtype,shopposition,gameover
 	global tree,treerect,treetime,hole,holepos,cloudposition,rain
-	global all_blocks,player,friend
+	global all_blocks,player,friend,timelapse
 	cloudirect.x=cloudposition[0]
 	cloudirect.y=cloudposition[1]
 	while running and not temperzone:
@@ -700,6 +703,8 @@ def start_game():
 				elif e.key == pygame.K_RETURN:
 					if shopposition[0]+200<player.rect.x and shopposition[0]+300>player.rect.x+player.rect.width and shopposition[1]+200<player.rect.y and shopposition[1]+310>player.rect.y+player.rect.height:
 						goto_shop()
+				elif e.key==pygame.K_l:
+					timelapse=60*24*3
 				elif e.key==pygame.K_t:
 					if player.seed>0:
 						showtree=True
@@ -709,7 +714,7 @@ def start_game():
 							treerect.x=player.rect.x
 						else:
 							treerect.x=player.rect.x+player.rect.width
-						socks[0].send(bytes('<tree_'+str(treerect.x)+'_'+str(treerect.y)+'_'+str(treetime)'>','utf-8'))
+						socks[0].send(bytes('<tree_'+str(treerect.x)+'_'+str(treerect.y)+'_'+str(treetime)+'>','utf-8'))
 				elif e.key == pygame.K_p:
 					if showhole==0:
 						if colliding:
@@ -731,6 +736,7 @@ def start_game():
 				elif e.key == pygame.K_LEFT:
 					pressed=False
 		screen.fill((100,255,255))
+		player.time+=timelapse
 		if player.vy<0:
 			player.vy+=a
 		else:
